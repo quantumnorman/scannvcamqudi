@@ -5,7 +5,7 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from qudi.core.connector import Connector
 from qudi.util.colordefs import QudiPalettePale as palette
 from qudi.core.module import GuiBase
-from qudi.interface.helmholtz_coil_interface import HelmholtzCoilInterface
+from qudi.interface.helmholtz_coil_interface import HelmholtzCoilInterface, MagnetState
 from qudi.util.paths import get_artwork_dir
 from .helmholtzcoil_control_dockwidget import HelmholtzControlDockWidget
 
@@ -67,22 +67,25 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
         label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         layout.addWidget(label, 0, 0)
 
-        self.laser_status_label = QtWidgets.QLabel('???')
-        self.laser_status_label.setFont(font)
-        layout.addWidget(self.laser_status_label, 0, 1)
+        self.coil_status_label = QtWidgets.QLabel('???')
+        self.coil_status_label.setFont(font)
+        layout.addWidget(self.coil_status_label, 0, 1)
         status_bar.addPermanentWidget(widget, 1)
+        self.set_magnet_state(MagnetState)
+        print(MagnetState.ON)
 
     
-    # def set_laser_state(self, state):
-    #     if state == LaserState.ON:
-    #         text = 'ON'
-    #     elif state == LaserState.OFF:
-    #         text = 'OFF'
-    #     elif state == LaserState.LOCKED:
-    #         text = 'SETTING'
-    #     else:
-    #         text = '???'
-    #     self.laser_status_label.setText(text)
+    def set_magnet_state(self, state):
+        if state == MagnetState.ON:
+            text = 'ON'
+        elif state == MagnetState.OFF:
+            text = 'OFF'
+        elif state == MagnetState.SETTING:
+            text = 'SETTING'
+        else:
+            text = 'unknown'
+        self.coil_status_label.setText(text)
+        print(MagnetState)
 
 
 class HelmholtzCoilGui(GuiBase):
@@ -138,7 +141,7 @@ class HelmholtzCoilGui(GuiBase):
         self.restore_default_view()
 
         #Initialize data from logic
-        # self._magnet_state_updated(logic.magnet_state)
+        self._magnet_state_updated(logic.magnet_state)
 
 
         # connect control dockwidget signals
@@ -204,32 +207,21 @@ class HelmholtzCoilGui(GuiBase):
 
 
     @QtCore.Slot(object)
-    def _set_magnet_clicked(self, state):
+    def _set_magnet_clicked(self):
         """ Control mode button group callback. Disables control elements and sends a signal to the
         logic. Logic response will enable the control elements again.
 
         @param ControlMode mode: Selected ControlMode enum
         """
-        self.control_dock_widget.setbfield_button.setEnabled(False)
-        self.sigMagnetStateChanged.emit(state)
+        # self.control_dock_widget.setbfield_button.setEnabled(False)
+        # self.sigMagnetStateChanged.emit(self._coil_logic().magnet_state)
+        return
 
     @QtCore.Slot(object)
-    def _magnet_state_updated(self):
-        self.control_dock_widget.setbfield_button.setEnabled(True)
-
-    # @QtCore.Slot(float)
-    # def _current_slider_moving(self, value):
-    #     """ ToDo: Document
-    #     """
-    #     self.control_dock_widget.current_setpoint_spinbox.setValue(value)
-
-    # @QtCore.Slot()
-    # def _current_slider_moved(self):
-    #     """ ToDo: Document
-    #     """
-    #     value = self.control_dock_widget.current_slider.value()
-    #     self.control_dock_widget.current_setpoint_spinbox.setValue(value)
-    #     self.sigCurrentChanged.emit(value, self.module_uuid)
+    def _magnet_state_updated(self, state):
+        # self.control_dock_widget.setbfield_button.setEnabled(True)
+        # self._coil_logic().magnet_state_change()
+        return
 
 
     # @QtCore.Slot()
@@ -245,29 +237,3 @@ class HelmholtzCoilGui(GuiBase):
     #     if caller_id != self.module_uuid:
     #         self.control_dock_widget.current_setpoint_spinbox.setValue(value)
     #         self.control_dock_widget.current_slider.setValue(value)
-
-    # @QtCore.Slot(object)
-    # def _control_mode_updated(self, mode):
-    #     if mode == ControlMode.POWER:
-    #         self.control_dock_widget.current_slider.setEnabled(False)
-    #         self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
-    #         self.control_dock_widget.power_slider.setEnabled(True)
-    #         self.control_dock_widget.power_setpoint_spinbox.setEnabled(True)
-    #         self.control_dock_widget.control_power_radio_button.setChecked(True)
-    #         self.control_dock_widget.control_power_radio_button.setEnabled(True)
-    #         self.control_dock_widget.control_current_radio_button.setEnabled(True)
-    #     elif mode == ControlMode.CURRENT:
-    #         self.control_dock_widget.power_slider.setEnabled(False)
-    #         self.control_dock_widget.power_setpoint_spinbox.setEnabled(False)
-    #         self.control_dock_widget.current_slider.setEnabled(True)
-    #         self.control_dock_widget.current_setpoint_spinbox.setEnabled(True)
-    #         self.control_dock_widget.control_current_radio_button.setChecked(True)
-    #         self.control_dock_widget.control_power_radio_button.setEnabled(True)
-    #         self.control_dock_widget.control_current_radio_button.setEnabled(True)
-    #     else:
-    #         self.control_dock_widget.current_slider.setEnabled(False)
-    #         self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
-    #         self.control_dock_widget.power_slider.setEnabled(False)
-    #         self.control_dock_widget.power_setpoint_spinbox.setEnabled(False)
-    #         self.control_dock_widget.control_power_radio_button.setEnabled(False)
-    #         self.control_dock_widget.control_current_radio_button.setEnabled(False)

@@ -126,7 +126,13 @@ class HelmholtzCoilLogic(LogicBase):
             self.sigFieldPhiReadChanged.emit(self.phi_read)
             self.sigFieldThetaReadChanged.emit(self.theta_read)
 
-
+    @QtCore.Slot()
+    def magnet_state_change(self):
+        coil = self._current()
+        magnet_state = coil.get_magnet_state()
+        if magnet_state != self._last_magnet_state:
+            self._last_magnet_state = magnet_state
+            self.sigMagnetStateChanged.emit(self._last_magnet_state)
     @QtCore.Slot()
     def _query_loop_body(self):
         with self._thread_lock:
