@@ -12,17 +12,17 @@ class HelmholtzCoilLogic(LogicBase):
     _current = Connector(name="coil_current_source", interface = "HelmholtzCoilInterface")
     _relay = Connector(name="coil_polarity_relay", interface="HelmholtzCoilRelayInterface")
 
-    sigFieldMagSetChanged = QtCore.Signal(float, object)
-    sigFieldPhiSetChanged = QtCore.Signal(float, object)
-    sigFieldThetaSetChanged = QtCore.Signal(float, object)
+    # sigFieldMagSetChanged = QtCore.Signal(float, object)
+    # sigFieldPhiSetChanged = QtCore.Signal(float, object)
+    # sigFieldThetaSetChanged = QtCore.Signal(float, object)
     sigMagnetStateChanged = QtCore.Signal(object)
-    sigMagnetFieldChanged = QtCore.Signal(object)
-    sigXCurrentChanged = QtCore.Signal(object)
-    sigYCurrentChanged = QtCore.Signal(object)
-    sigZCurrentChanged = QtCore.Signal(object)
-    sigFieldMagReadChanged = QtCore.Signal(float, object)
-    sigFieldPhiReadChanged = QtCore.Signal(float, object)
-    sigFieldThetaReadChanged = QtCore.Signal(float, object)
+    # sigMagnetFieldChanged = QtCore.Signal(object)
+    # sigXCurrentChanged = QtCore.Signal(object)
+    # sigYCurrentChanged = QtCore.Signal(object)
+    # sigZCurrentChanged = QtCore.Signal(object)
+    # sigFieldMagReadChanged = QtCore.Signal(float, object)
+    # sigFieldPhiReadChanged = QtCore.Signal(float, object)
+    # sigFieldThetaReadChanged = QtCore.Signal(float, object)
 
 
     
@@ -46,6 +46,9 @@ class HelmholtzCoilLogic(LogicBase):
     def magnet_state(self):
         with self._thread_lock:
             self._last_magnet_state = self.current.get_magnet_state()
+            print ("get magnet state value: ", self.current.get_magnet_state())
+            print("last magnet state now:", self._last_magnet_state)
+            return self._last_magnet_state
 
     @property
     def magnet_setpoint(self):
@@ -107,6 +110,10 @@ class HelmholtzCoilLogic(LogicBase):
     def magnet_setout(self, bnorm, phi, theta):
         self.set_field(bnorm, phi, theta)
 
+    @magnet_state.setter
+    def magnet_state(self, state):#
+        self.set_magnet_state(state)
+
     @QtCore.Slot(float, object)
     def set_field(self, bnorm, phi, theta):
         """ Set laser (diode) current """
@@ -133,21 +140,21 @@ class HelmholtzCoilLogic(LogicBase):
         if magnet_state != self._last_magnet_state:
             self._last_magnet_state = magnet_state
             self.sigMagnetStateChanged.emit(self._last_magnet_state)
-    @QtCore.Slot()
-    def _query_loop_body(self):
-        with self._thread_lock:
-            if self.module_state() != "locked":
-                return
-            coil = self._current()
-            try:
-                magnet_state = coil.get_magnet_state()
-                if magnet_state != self._last_magnet_state:
-                    self._last_magnet_state = magnet_state
-                    self.sigMagnetStateChanged.emit(self._last_magnet_state)
-            except: pass
-            try:
-                magnet_field = coil.getfield()
-                if magnet_field != self._last_magnet_field:
-                    self._last_magnet_field = magnet_field
-                    self.sigMagnetFieldChanged.emit(self._last_magnet_field)
-            except: pass
+    # @QtCore.Slot()
+    # def _query_loop_body(self):
+    #     with self._thread_lock:
+    #         if self.module_state() != "locked":
+    #             return
+    #         coil = self._current()
+    #         try:
+    #             magnet_state = coil.get_magnet_state()
+    #             if magnet_state != self._last_magnet_state:
+    #                 self._last_magnet_state = magnet_state
+    #                 self.sigMagnetStateChanged.emit(self._last_magnet_state)
+    #         except: pass
+    #         try:
+    #             magnet_field = coil.getfield()
+    #             if magnet_field != self._last_magnet_field:
+    #                 self._last_magnet_field = magnet_field
+    #                 self.sigMagnetFieldChanged.emit(self._last_magnet_field)
+    #         except: pass

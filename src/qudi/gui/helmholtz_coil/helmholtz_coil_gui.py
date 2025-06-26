@@ -71,11 +71,10 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
         self.coil_status_label.setFont(font)
         layout.addWidget(self.coil_status_label, 0, 1)
         status_bar.addPermanentWidget(widget, 1)
-        self.set_magnet_state(MagnetState)
-        print(MagnetState.ON)
 
     
     def set_magnet_state(self, state):
+        print("state for set magnet state from gui: ", state)
         if state == MagnetState.ON:
             text = 'ON'
         elif state == MagnetState.OFF:
@@ -85,7 +84,8 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
         else:
             text = 'unknown'
         self.coil_status_label.setText(text)
-        print(MagnetState)
+        print(text)
+        print("set magnet state from gui")
 
 
 class HelmholtzCoilGui(GuiBase):
@@ -145,7 +145,7 @@ class HelmholtzCoilGui(GuiBase):
 
 
         # connect control dockwidget signals
-        self.control_dock_widget.sigMagnetStateChanged.connect(self._set_magnet_clicked)
+        # self.control_dock_widget.sigMagnetStateChanged.connect(self._set_magnet_clicked)
         # self.control_dock_widget.current_setpoint_spinbox.editingFinished.connect(
         #     self._current_setpoint_edited
         # )
@@ -179,15 +179,15 @@ class HelmholtzCoilGui(GuiBase):
         """
         self._mw.close()
         # # disconnect all signals
-        # logic = self._laser_logic()
         # logic.sigControlModeChanged.disconnect(self._control_mode_updated)
-
+        logic = self._coil_logic()
         # self.control_dock_widget.visibilityChanged.disconnect()
         # self._mw.action_view_controls.triggered.disconnect()
         # self.control_dock_widget.sigControlModeChanged.disconnect()
         # self._mw.action_view_default.triggered.disconnect()
         # self.sigCurrentChanged.disconnect()
         # self.sigControlModeChanged.disconnect()
+        logic.sigMagnetStateChanged.disconnect(self._magnet_state_updated)
 
     def show(self):
         """Make window visible and put it above all other windows.
@@ -219,8 +219,17 @@ class HelmholtzCoilGui(GuiBase):
 
     @QtCore.Slot(object)
     def _magnet_state_updated(self, state):
+        print("state in gui update loop: ", state)
+        self._mw.set_magnet_state(state)
         # self.control_dock_widget.setbfield_button.setEnabled(True)
         # self._coil_logic().magnet_state_change()
+        if state == MagnetState.on:
+            self.control_dock_widget.setbfield_button.setEnabled(True)
+        
+        elif state == MagnetState.off:
+            self.control_dock_widget.setbfield_button.setEnabled(False)
+        else:
+            print("error setting magnet state")
         return
 
 

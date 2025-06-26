@@ -30,6 +30,7 @@ class HelmholtzCoil(HelmholtzCoilInterface):
         self.xcurrent_read = 0
         self.ycurrent_read = 0
         self.zcurrent_read = 0
+        self.magnet_state = None
 
 
     def on_activate(self):
@@ -43,15 +44,15 @@ class HelmholtzCoil(HelmholtzCoilInterface):
         self._write('APP:VOLT 3.000000,3.000000,3.000000')
         self._write("APP:CURR 0.000000,0.000000,0.000000")
         self._write("OUTP:STAT:ALL ON")
-        self.magnet_state = MagnetState.ON
-        MagnetState(1)
+        self.set_magnet_state(MagnetState.ON)
+        print("magnet state is: ", self.magnet_state)
+
     def on_deactivate(self):
         self._write("OUTP:STAT:ALL OFF")
         if self._query("OUTP:STAT:ALL?")== '0\n':
             print("Keithley outputs disabled")
         else: print("Error, Keithley outputs may not be disabled")
-        self.magnet_state = MagnetState.OFF
-        MagnetState(0)
+        self.set_magnet_state(MagnetState.OFF)
     
 
     def _write(self, command):
@@ -167,10 +168,10 @@ class HelmholtzCoil(HelmholtzCoilInterface):
 
     def set_magnet_state(self, state):
         self.magnet_state = state
-        print(state)
+        print("magnet state set to: ", state)
     
     def get_magnet_state(self):
-        print(self.magnet_state)
+        print("magnet state got: ", self.magnet_state)
         return self.magnet_state
 
 class HelmholtzCoilRelay(HelmholtzCoilRelayInterface):
