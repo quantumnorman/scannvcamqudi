@@ -73,16 +73,16 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
         status_bar.addPermanentWidget(widget, 1)
 
     
-    def set_laser_state(self, state):
-        if state == LaserState.ON:
-            text = 'ON'
-        elif state == LaserState.OFF:
-            text = 'OFF'
-        elif state == LaserState.LOCKED:
-            text = 'SETTING'
-        else:
-            text = '???'
-        self.laser_status_label.setText(text)
+    # def set_laser_state(self, state):
+    #     if state == LaserState.ON:
+    #         text = 'ON'
+    #     elif state == LaserState.OFF:
+    #         text = 'OFF'
+    #     elif state == LaserState.LOCKED:
+    #         text = 'SETTING'
+    #     else:
+    #         text = '???'
+    #     self.laser_status_label.setText(text)
 
 
 class HelmholtzCoilGui(GuiBase):
@@ -138,7 +138,7 @@ class HelmholtzCoilGui(GuiBase):
         self.restore_default_view()
 
         #Initialize data from logic
-        self._magnet_state_updated(logic.magnet_state)
+        # self._magnet_state_updated(logic.magnet_state)
 
 
         # connect control dockwidget signals

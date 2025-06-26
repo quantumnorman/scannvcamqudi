@@ -33,11 +33,11 @@ class HelmholtzCoilLogic(LogicBase):
         self._last_magnet_field = [None, None, None]
 
     def on_activate(self):
-        current = self._current()
+        self.current = self._current()
         self.relay = self._relay()
-        self._query = current._query
-        self._write = current._write
-        self._last_magnet_state = current.get_magnet_state()
+        self._query = self.current._query
+        self._write = self.current._write
+        self._last_magnet_state = self.current.get_magnet_state()
 
     def on_deactivate(self):
         self.stop_query_loop()
