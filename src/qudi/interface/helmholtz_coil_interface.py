@@ -18,29 +18,25 @@ class HelmholtzCoilInterface(Base):
         pass
 
     @abstractmethod
+    def activatemagnet(self):
+        pass
+
+    @abstractmethod
+    def write3channels(self, TYPE, x, y, z):
+        pass
+
+    @abstractmethod
+    def querychannel(self, channel, type):
+        pass
+
+    @abstractmethod
+    def query3channels(self, type):
+        pass
+
+    @abstractmethod
+    def set_magnet_state(self, state):
+        pass
+    
+    @abstractmethod
     def get_magnet_state(self):
-        pass
-
-    @abstractmethod
-    def setfield(self, bnorm, phi, theta):
-        pass
-
-    def getfield(self):
-        pass
-
-class HelmholtzCoilRelayInterface(Base):
-    @abstractmethod
-    def _readline(self):
-        pass
-
-    @abstractmethod
-    def _write(self, command):
-        pass
-
-    @abstractmethod
-    def _flush(self):
-        pass
-
-    @abstractmethod
-    def _sendBreak(self):
         pass

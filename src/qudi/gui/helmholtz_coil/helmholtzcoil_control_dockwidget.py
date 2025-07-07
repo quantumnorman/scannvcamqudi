@@ -11,6 +11,7 @@
 from PySide2 import QtCore, QtWidgets
 from qudi.util.widgets.advanced_dockwidget import AdvancedDockWidget
 from qudi.interface.helmholtz_coil_interface import MagnetState
+from qtwidgets import Toggle
 
 class HelmholtzControlDockWidget(AdvancedDockWidget):
     """
@@ -48,27 +49,31 @@ class HelmholtzControlDockWidget(AdvancedDockWidget):
 
         self.setbfield_button = QtWidgets.QPushButton()
         main_layout.addWidget(self.setbfield_button, 6, 0, 1, 1)
-        self.setbfield_button.clicked.connect(
-            lambda: self.sigMagnetStateChanged.emit(MagnetState.SETTING)
-        )
+        # self.setbfield_button.clicked.connect(
+        #     lambda: self.sigMagnetStateChanged.emit(MagnetState.SETTING)
+        # )
 
         self.label_12 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_12, 4, 3, 1, 1)
 
         self.lineEdit_4 = QtWidgets.QLineEdit()
         main_layout.addWidget(self.lineEdit_4, 6, 3, 1, 1)
+        self.lineEdit_4.setText("Line edit 4")
 
         self.label_4 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_4, 4, 0, 1, 1)
+        self.label_4.setText("label 4")
 
-        self.theta_set_label = QtWidgets.QLineEdit()
-        main_layout.addWidget(self.theta_set_label, 5, 0, 1, 1)
+        self.theta_set_lineedit = QtWidgets.QLineEdit()
+        main_layout.addWidget(self.theta_set_lineedit, 5, 0, 1, 1)
+        self.theta_set_lineedit.setText("Theta lineedit")
 
         self.label_7 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_7, 0, 2, 1, 1)
 
-        self.bnorm_set_label = QtWidgets.QLineEdit()
-        main_layout.addWidget(self.bnorm_set_label, 1, 0, 1, 1)
+        self.bnorm_set_lineedit = QtWidgets.QLineEdit()
+        main_layout.addWidget(self.bnorm_set_lineedit, 1, 0, 1, 1)
+        self.bnorm_set_lineedit.setText("Bnorm lineedit")
 
         self.label_2 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_2, 0, 0, 1, 1)
@@ -79,48 +84,50 @@ class HelmholtzControlDockWidget(AdvancedDockWidget):
         self.label_10 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_10, 0, 3, 1, 1)
 
-        self.phi_set_label = QtWidgets.QLineEdit()
-        main_layout.addWidget(self.phi_set_label, 3, 0, 1, 1)
+        self.phi_set_lineedit = QtWidgets.QLineEdit()
+        main_layout.addWidget(self.phi_set_lineedit, 3, 0, 1, 1)
+        self.phi_set_lineedit.setText("Phi set lineedit")
+
 
         self.label_13 = QtWidgets.QLabel()
         main_layout.addWidget(self.label_13, 6, 2, 1, 1)
+        self.label_13.setText("label 13")
 
         self.xcurrentpolarity = QtWidgets.QLabel()
-        self.xcurrentpolarity.setText("")
+        self.xcurrentpolarity.setText("x current pol")
         main_layout.addWidget(self.xcurrentpolarity, 1, 3, 1, 1)
 
         self.ycurrentpolarity = QtWidgets.QLabel()
-        self.ycurrentpolarity.setText("")
+        self.ycurrentpolarity.setText("y current pol")
         main_layout.addWidget(self.ycurrentpolarity, 3, 3, 1, 1)
 
         self.zcurrentpolarity = QtWidgets.QLabel()
-        self.zcurrentpolarity.setText("")
+        self.zcurrentpolarity.setText("z curren pol")
         main_layout.addWidget(self.zcurrentpolarity, 5, 3, 1, 1)
 
         self.bnorm_read = QtWidgets.QLabel()
-        self.bnorm_read.setText("")
+        self.bnorm_read.setText("bnorm")
         main_layout.addWidget(self.bnorm_read, 1, 1, 1, 1)
 
         self.phi_read = QtWidgets.QLabel()
-        self.phi_read.setText("")
+        self.phi_read.setText("phi")
         main_layout.addWidget(self.phi_read, 3, 1, 1, 1)
 
         self.theta_read = QtWidgets.QLabel()
-        self.theta_read.setText("")
+        self.theta_read.setText("theta")
         main_layout.addWidget(self.theta_read, 5, 1, 1, 1)
 
         self.currentz_read = QtWidgets.QLabel()
-        self.currentz_read.setText("")
+        self.currentz_read.setText("current z read")
         main_layout.addWidget(self.currentz_read, 5, 2, 1, 1)
 
         self.currenty_read = QtWidgets.QLabel()
-        self.currenty_read.setText("")
+        self.currenty_read.setText("current y read")
         main_layout.addWidget(self.currenty_read, 3, 2, 1, 1)
 
         self.currentx_read = QtWidgets.QLabel()
-        self.currentx_read.setText("")
+        self.currentx_read.setText("current x read")
         main_layout.addWidget(self.currentx_read, 1, 2, 1, 1)
-
 
         self.label.setText( "B norm read (mT)")
         self.label_8.setText( "Current y (A)")
@@ -130,11 +137,11 @@ class HelmholtzControlDockWidget(AdvancedDockWidget):
         self.label_12.setText( "Polarity z")
         self.lineEdit_4.setText( "500")
         self.label_4.setText( "Theta (rad)")
-        self.theta_set_label.setText( "0")
+        self.theta_set_lineedit.setText( "0")
         self.label_7.setText( "Current x (A)")
-        self.bnorm_set_label.setText( "0")
+        self.bnorm_set_lineedit.setText( "0")
         self.label_2.setText( "B norm (mT)")
         self.label_6.setText( "Theta read (rad)")
         self.label_10.setText( "Polarity x")
-        self.phi_set_label.setText( "0")
+        self.phi_set_lineedit.setText( "0")
         self.label_13.setText( "Set wait time (ms)")

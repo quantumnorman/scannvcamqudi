@@ -1,14 +1,14 @@
 
 import os
 from PySide2 import QtCore, QtWidgets, QtGui
-
 from qudi.core.connector import Connector
 from qudi.util.colordefs import QudiPalettePale as palette
 from qudi.core.module import GuiBase
 from qudi.interface.helmholtz_coil_interface import HelmholtzCoilInterface, MagnetState
+from qudi.interface.helmholtz_coil_relay_interface import HelmholtzCoilRelayInterface
 from qudi.util.paths import get_artwork_dir
 from .helmholtzcoil_control_dockwidget import HelmholtzControlDockWidget
-
+from qtwidgets import Toggle
 
 class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
     """ The main window for the Helmholtz Coil """
@@ -69,23 +69,26 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
 
         self.coil_status_label = QtWidgets.QLabel('???')
         self.coil_status_label.setFont(font)
+        self.field_onoff_toggle = Toggle()
+
+
         layout.addWidget(self.coil_status_label, 0, 1)
+        layout.addWidget(self.field_onoff_toggle, 0, 2)
         status_bar.addPermanentWidget(widget, 1)
+        
+
 
     
     def set_magnet_state(self, state):
         print("state for set magnet state from gui: ", state)
         if state == MagnetState.ON:
             text = 'ON'
+            self.field_onoff_toggle.setChecked(True) 
         elif state == MagnetState.OFF:
             text = 'OFF'
-        elif state == MagnetState.SETTING:
-            text = 'SETTING'
-        else:
-            text = 'unknown'
+            self.field_onoff_toggle.setChecked(False)
+
         self.coil_status_label.setText(text)
-        print(text)
-        print("set magnet state from gui")
 
 
 class HelmholtzCoilGui(GuiBase):
@@ -102,12 +105,9 @@ class HelmholtzCoilGui(GuiBase):
     # declare connectors
     _coil_logic = Connector(name='helmholtz_coil_logic', interface='HelmholtzCoilLogic')
 
-    sigFieldMagChanged = QtCore.Signal(float, object)
-    sigFieldPhiChanged = QtCore.Signal(float, object)
-    sigFieldThetaChanged = QtCore.Signal(float, object)
-    sigXPolChanged = QtCore.Signal(object)
-    sigYPolChanged = QtCore.Signal(object)
-    sigZPolChanged = QtCore.Signal(object)
+
+    sigFieldSetPointChanged = QtCore.Signal(float, float, float, float)
+
     sigMagnetStateChanged = QtCore.Signal(object)
 
 
@@ -141,11 +141,14 @@ class HelmholtzCoilGui(GuiBase):
         self.restore_default_view()
 
         #Initialize data from logic
-        self._magnet_state_updated(logic.magnet_state)
+        # self._magnet_state_updated(logic.magnet_state)
 
+        self._mw.field_onoff_toggle.stateChanged.connect(self.on_checked_box)
+        self.control_dock_widget.setbfield_button.clicked.connect(self._set_bfield_clicked)
 
         # connect control dockwidget signals
         # self.control_dock_widget.sigMagnetStateChanged.connect(self._set_magnet_clicked)
+        # self.control_dock_widget.setbfield_button.clicked.connect(self._set_magnet_clicked)
         # self.control_dock_widget.current_setpoint_spinbox.editingFinished.connect(
         #     self._current_setpoint_edited
         # )
@@ -155,6 +158,8 @@ class HelmholtzCoilGui(GuiBase):
 
         # # connect external signals to logic
         self.sigMagnetStateChanged.connect(logic.set_magnet_state)
+        self.sigFieldSetPointChanged.connect(logic.setfield, QtCore.Qt.QueuedConnection)
+        logic.sigFieldReadChanged.connect(self.on_updated_fieldscurrents, QtCore.Qt.QueuedConnection)
         # self.sigCurrentChanged.connect(logic.set_current)
 
         # # connect update signals from logic
@@ -164,7 +169,7 @@ class HelmholtzCoilGui(GuiBase):
         # logic.sigCurrentSetpointChanged.connect(
         #     self._current_setpoint_updated, QtCore.Qt.QueuedConnection
         # )
-        logic.sigMagnetStateChanged.connect(self._magnet_state_updated, QtCore.Qt.QueuedConnection)
+        # logic.sigMagnetStateChanged.connect(self._magnet_state_updated, QtCore.Qt.QueuedConnection)
         # logic.sigLaserStateChanged.connect(self._laser_state_updated, QtCore.Qt.QueuedConnection)
         # logic.sigShutterStateChanged.connect(
         #     self._shutter_state_updated, QtCore.Qt.QueuedConnection
@@ -181,13 +186,12 @@ class HelmholtzCoilGui(GuiBase):
         # # disconnect all signals
         # logic.sigControlModeChanged.disconnect(self._control_mode_updated)
         logic = self._coil_logic()
-        # self.control_dock_widget.visibilityChanged.disconnect()
+        self.control_dock_widget.visibilityChanged.disconnect()
         # self._mw.action_view_controls.triggered.disconnect()
         # self.control_dock_widget.sigControlModeChanged.disconnect()
         # self._mw.action_view_default.triggered.disconnect()
         # self.sigCurrentChanged.disconnect()
         # self.sigControlModeChanged.disconnect()
-        logic.sigMagnetStateChanged.disconnect(self._magnet_state_updated)
 
     def show(self):
         """Make window visible and put it above all other windows.
@@ -195,6 +199,7 @@ class HelmholtzCoilGui(GuiBase):
         self._mw.show()
         self._mw.raise_()
         self._mw.activateWindow()
+
 
     def restore_default_view(self):
         """ Restore the arrangement of DockWidgets to the default
@@ -207,42 +212,65 @@ class HelmholtzCoilGui(GuiBase):
 
 
     @QtCore.Slot(object)
-    def _set_magnet_clicked(self):
+    def _set_bfield_clicked(self):
         """ Control mode button group callback. Disables control elements and sends a signal to the
         logic. Logic response will enable the control elements again.
 
         @param ControlMode mode: Selected ControlMode enum
         """
         # self.control_dock_widget.setbfield_button.setEnabled(False)
-        # self.sigMagnetStateChanged.emit(self._coil_logic().magnet_state)
-        return
-
-    @QtCore.Slot(object)
-    def _magnet_state_updated(self, state):
-        print("state in gui update loop: ", state)
-        self._mw.set_magnet_state(state)
-        # self.control_dock_widget.setbfield_button.setEnabled(True)
-        # self._coil_logic().magnet_state_change()
-        if state == MagnetState.on:
-            self.control_dock_widget.setbfield_button.setEnabled(True)
+        print("clicked")
         
-        elif state == MagnetState.off:
-            self.control_dock_widget.setbfield_button.setEnabled(False)
-        else:
-            print("error setting magnet state")
+        bnorm_set= float(self.control_dock_widget.bnorm_set_lineedit.text())
+        phi_set = float(self.control_dock_widget.phi_set_lineedit.text())
+        theta_set = float(self.control_dock_widget.theta_set_lineedit.text())
+        wait_set = float(self.control_dock_widget.lineEdit_4.text())
+
+        self.sigFieldSetPointChanged.emit(bnorm_set, phi_set, theta_set, wait_set)
+        print("emitted")
+        # currents, field = self._coil_logic().set_field(0, 0, 0)
+        # self.control_dock_widget.bnorm_read.setText(str(field[0]))
+        # self.control_dock_widget.phi_read.setText(str(field[1]))
+        # self.control_dock_widget.theta_read.setText(str(field[2]))
+        # self.control_dock_widget.currentx_read.setText(str(currents[0]))
+        # self.control_dock_widget.currenty_read.setText(str(currents[1]))
+        # self.control_dock_widget.currentz_read.setText(str(currents[2]))
+
         return
 
+    @QtCore.Slot(object, object)
+    def on_updated_fieldscurrents(self, currents, field):
+        self.control_dock_widget.bnorm_read.setText(str(field[0]))
+        self.control_dock_widget.phi_read.setText(str(field[1]))
+        self.control_dock_widget.theta_read.setText(str(field[2]))
 
-    # @QtCore.Slot()
-    # def _current_setpoint_edited(self):
-    #     """ ToDo: Document
-    #     """
-    #     value = self.control_dock_widget.current_setpoint_spinbox.value()
-    #     self.control_dock_widget.current_slider.setValue(value)
-    #     self.sigCurrentChanged.emit(value, self.module_uuid)
+        self.control_dock_widget.currentx_read.setText(str(currents[0]))
+        self.control_dock_widget.currenty_read.setText(str(currents[1]))
+        self.control_dock_widget.currentz_read.setText(str(currents[2]))
 
-    # @QtCore.Slot(float, object)
-    # def _current_setpoint_updated(self, value, caller_id):
-    #     if caller_id != self.module_uuid:
-    #         self.control_dock_widget.current_setpoint_spinbox.setValue(value)
-    #         self.control_dock_widget.current_slider.setValue(value)
+    # def _magnet_state_updated(self, state):
+    #     self._mw.set_magnet_state(state)
+    #     # self.control_dock_widget.setbfield_button.setEnabled(True)
+    #     # self._coil_logic().magnet_state_change()
+    #     if state == MagnetState.ON:
+    #         self.control_dock_widget.setbfield_button.setEnabled(True)
+        
+    #     elif state == MagnetState.OFF:
+    #         self.control_dock_widget.setbfield_button.setEnabled(False)
+    #     else:
+    #         print("error setting magnet state")
+    #     return
+
+    @QtCore.Slot()
+    def on_checked_box(self, state):
+        if state == 2:
+            self._mw.coil_status_label.setText("ON")
+            self.control_dock_widget.setbfield_button.setEnabled(True)
+            self._coil_logic().set_magnet_state(MagnetState.ON)
+            
+
+        if state == 0:
+            self._mw.coil_status_label.setText("OFF")
+            self._coil_logic().set_magnet_state(MagnetState.OFF)
+            # self._magnet_state_updated(MagnetState.OFF)
+            self.control_dock_widget.setbfield_button.setEnabled(False)

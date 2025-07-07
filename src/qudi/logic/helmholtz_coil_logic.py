@@ -2,58 +2,171 @@ import time
 import numpy as np
 from PySide2 import QtCore
 
-from qudi.util.mutex import RecursiveMutex
+from qudi.util.mutex import Mutex
 from qudi.core.connector import Connector
 from qudi.core.configoption import ConfigOption
 from qudi.core.module import LogicBase
-from qudi.interface.helmholtz_coil_interface import HelmholtzCoilInterface, MagnetState, HelmholtzCoilRelayInterface
+from qudi.interface.helmholtz_coil_interface import MagnetState
+
+
 
 class HelmholtzCoilLogic(LogicBase):
-    _current = Connector(name="coil_current_source", interface = "HelmholtzCoilInterface")
-    _relay = Connector(name="coil_polarity_relay", interface="HelmholtzCoilRelayInterface")
-
+    _current = Connector(name="current_source", interface = "HelmholtzCoilInterface")
+    _relay = Connector(name="relay_source", interface="HelmholtzCoilRelayInterface")
+    _fieldcoeffs = ConfigOption("field_coeffs")
+    _current_min = ConfigOption("current_min", -3)
+    _current_max = ConfigOption("current_max", 3)
+    _voltage_max = ConfigOption("voltage_max", 3)    
     # sigFieldMagSetChanged = QtCore.Signal(float, object)
     # sigFieldPhiSetChanged = QtCore.Signal(float, object)
     # sigFieldThetaSetChanged = QtCore.Signal(float, object)
     sigMagnetStateChanged = QtCore.Signal(object)
     # sigMagnetFieldChanged = QtCore.Signal(object)
-    # sigXCurrentChanged = QtCore.Signal(object)
-    # sigYCurrentChanged = QtCore.Signal(object)
-    # sigZCurrentChanged = QtCore.Signal(object)
-    # sigFieldMagReadChanged = QtCore.Signal(float, object)
-    # sigFieldPhiReadChanged = QtCore.Signal(float, object)
-    # sigFieldThetaReadChanged = QtCore.Signal(float, object)
+    sigFieldReadChanged = QtCore.Signal(object, object)
 
 
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._thread_lock = RecursiveMutex()
+        self._thread_lock = Mutex()
         self._last_magnet_state = None
         self._last_magnet_field = [None, None, None]
+    
 
     def on_activate(self):
         self.current = self._current()
         self.relay = self._relay()
-        self._query = self.current._query
-        self._write = self.current._write
         self._last_magnet_state = self.current.get_magnet_state()
 
     def on_deactivate(self):
         self.stop_query_loop()
+
+
+    def setpolarity(self, x,y,z):
+
+        "Determines the 3-bit polarity string to send to the Arduino Relay. 0 for positive polarity, 1 for negative polarity"
+        pols = []
+        if abs(x) == x: pols.append(0)
+        else: pols.append(1)
+
+        if abs(y) == y: pols.append(0)
+        else: pols.append(1)
+
+        if abs(z) == z: pols.append(0)
+        else: pols.append(1)
+
+        pols = "".join(str(pol) for pol in pols)
+        print(self.relay)
+        d = self.relay.setbfieldrelaypol(pols)
+        d = self.relay.getbfieldrelaypol()
+        pols = self.convertpols(d)
+        print(pols)
+        return d, pols
+    
+    @QtCore.Slot(float, float, float, float)
+    def setfield(self, bnorm, phi, theta, wait):
+        print("setting field starting now")
+        if self.magnet_state != MagnetState.ON:
+            self._write("OUTP:STAT:ALL ON")
+            print('magnet state check')
+        if MagnetState == 3:
+            print("Error with magnet state!")
+        else: 
+            print("Magnet on")
+
+        x,y,z, errs = self.fieldtocurrent(bnorm, phi, theta) ## Step 1 Convert input B field values to current values
+        print("Any clipped currents? ", errs)
+        print("x,y,z", x, y, z)
+
+        d,pols = self.setpolarity(x,y,z) ##Step 2 set the Arduino relay polarities
+        # print("String sent to Arduino relay and string read from Arduino: ", d, pols) ###d and pols should be the same (pols is what you're trying to set, d is what is read out)
+
+        s = self.current.write3channels("CURR", x,y,z) ##Step 3 sets the current (using absolute values since this is setting to the Keithley and the Arduino will deal with the polarities)
+        print("String sent to ketihley: ", s)
+        time.sleep(wait*0.001)
+        dat = self.current.query3channels("CURR")
+        print("Final readings from Keithley: ", dat)
+
+        currents, field = self.getfield(dat, pols)
+        print(currents, field)
+        self.sigFieldReadChanged.emit(currents, field)
+        print("signal emitted")
+        return currents, field
+
+
+    def getfield(self, dat, d):
+
+        self.xcurrent_read = d[0] * float(dat["X"]["CURR"])
+        self.ycurrent_read = d[1] * float(dat["Y"]["CURR"])
+        self.zcurrent_read = d[2] * float(dat["Z"]["CURR"])
+
+        self.bnorm_read, self.phi_read, self.theta_read = self.currenttofield(self.xcurrent_read, self.ycurrent_read, self.zcurrent_read) ##Convert read values to field values
+
+        print([self.xcurrent_read, self.ycurrent_read, self.zcurrent_read],  [self.bnorm_read, self.phi_read, self.theta_read], d)
+
+        return [self.xcurrent_read, self.ycurrent_read, self.zcurrent_read],  [self.bnorm_read, self.phi_read, self.theta_read]
+
+
+    def currenttofield(self, x1, y1, z1):
+        "Converts the x,y,z current input values into bnorm, phi, and theta values using calibration parameters in fieldcoeffs"
+        x = self.calibcurrtobfield(self._fieldcoeffs["X"], x1)
+        y = self.calibcurrtobfield(self._fieldcoeffs["Y"], y1)
+        z = self.calibcurrtobfield(self._fieldcoeffs["Z"], z1)
+        bnorm = np.sqrt(x**2 + y**2 + z**2)
+        phi = np.atan(y/x)
+        theta = np.acos(z/bnorm)
+
+        return bnorm, phi, theta
+
+    def calibcurrtobfield(self, fieldcoeffs, x):
+        "Calibrates the current to field conversion using parameters in fieldcoeffs"
+        return (x * fieldcoeffs[0]) + fieldcoeffs[1]
+    
+    def calibbfieldtocurr(self, fieldcoeffs, x):
+        "Calibrates the field to current conversion using parameters in fieldcoeffs"
+        y = (x - fieldcoeffs[1])/fieldcoeffs[0]
+        if self._current_min<=y<=self._current_max:
+            return y, None
+        elif y>self._current_max: return self._current_max, "Current clipped to " + str(self._current_max) + "A"
+        elif y<self._current_min: return self._current_min, "Current clipped to " + str(self._current_min) + "A"
+
+    def fieldtocurrent(self, B, phi, theta):
+        "Converts the Bnorm, phi, and theta input values into x, y, z, current values using calibration parameters in fieldcoeffs"
+        # print(self._fieldcoeffs['X'])
+        x, errx = self.calibbfieldtocurr(self._fieldcoeffs['X'], B * np.sin(theta)* np.cos(phi))
+        y, erry = self.calibbfieldtocurr(self._fieldcoeffs['Y'], B * np.sin(theta) * np.sin(phi))
+        z, errz = self.calibbfieldtocurr(self._fieldcoeffs['Z'], B * np.cos(theta))
+        print(x,y,z,)
+
+        if errx==erry==errz==None: return x,y,z, None
+        
+        else: return x,y,z, [errx, erry, errz]
+        
+    
+    def convertpols(self, pols):
+        d = int(pols)
+        op1 = np.floor(d/100)
+        if op1 == 0: x = 1
+        else: x = -1
+        op2 = np.remainder(d, 100)
+        if np.floor(op2) == 0: y = 1
+        else: y = -1
+        op3 = np.remainder(d,10)
+        if np.floor(op3) == 0: z = 1
+        else: z = -1
+        print(x,y,z)
+        return x, y, z
 
     @property
     def magnet_state(self):
         with self._thread_lock:
             self._last_magnet_state = self.current.get_magnet_state()
             print ("get magnet state value: ", self.current.get_magnet_state())
-            print("last magnet state now:", self._last_magnet_state)
             return self._last_magnet_state
 
     @property
     def magnet_setpoint(self):
         with self._thread_lock:
-            self._last_magnet_setpoint = self._current().get_field()
+            self._last_magnet_setpoint = self.current.get_field()
         return self._last_magnet_setpoint
 
     @QtCore.Slot()
@@ -101,7 +214,7 @@ class HelmholtzCoilLogic(LogicBase):
                 self.log.error(f'Invalid magnet state "{state}" for laser encountered.')
             else:
                 try:
-                    self._current().set_magnet_state(state)
+                    self.current.set_magnet_state(state)
                 except:
                     self.log.exception('Error while setting magnet state mode:')
             self.sigMagnetStateChanged.emit(self.magnet_state)
@@ -114,24 +227,17 @@ class HelmholtzCoilLogic(LogicBase):
     def magnet_state(self, state):#
         self.set_magnet_state(state)
 
-    @QtCore.Slot(float, object)
+    @QtCore.Slot(float, float, float)
     def set_field(self, bnorm, phi, theta):
         """ Set laser (diode) current """
-        with self._thread_lock:
-            self.current.setfield(bnorm, phi, theta)
+        # with self._thread_lock:
+        currents, field = self.setfield(bnorm, phi, theta)
+        print("looooooop")
+        self.sigFieldReadChanged.emit(currents, field)
+        print("emitted")
 
+        return currents, field
 
-            self.sigXCurrentChanged.emit(self.xcurrent_read)
-            self.sigYCurrentChanged.emit(self.ycurrent_read)
-            self.sigZCurrentChanged.emit(self.zcurrent_read)
-
-            self.sigFieldMagSetChanged.emit(self.bnorm_setpoint)
-            self.sigFieldPhiSetChanged.emit(self.phi_setpoint)
-            self.sigFieldThetaSetChanged.emit(self.theta_setpoint)
-
-            self.sigFieldMagReadChanged.emit(self.bnorm_read)
-            self.sigFieldPhiReadChanged.emit(self.phi_read)
-            self.sigFieldThetaReadChanged.emit(self.theta_read)
 
     @QtCore.Slot()
     def magnet_state_change(self):
@@ -140,21 +246,4 @@ class HelmholtzCoilLogic(LogicBase):
         if magnet_state != self._last_magnet_state:
             self._last_magnet_state = magnet_state
             self.sigMagnetStateChanged.emit(self._last_magnet_state)
-    # @QtCore.Slot()
-    # def _query_loop_body(self):
-    #     with self._thread_lock:
-    #         if self.module_state() != "locked":
-    #             return
-    #         coil = self._current()
-    #         try:
-    #             magnet_state = coil.get_magnet_state()
-    #             if magnet_state != self._last_magnet_state:
-    #                 self._last_magnet_state = magnet_state
-    #                 self.sigMagnetStateChanged.emit(self._last_magnet_state)
-    #         except: pass
-    #         try:
-    #             magnet_field = coil.getfield()
-    #             if magnet_field != self._last_magnet_field:
-    #                 self._last_magnet_field = magnet_field
-    #                 self.sigMagnetFieldChanged.emit(self._last_magnet_field)
-    #         except: pass
+
