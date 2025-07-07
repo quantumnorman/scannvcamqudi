@@ -143,18 +143,14 @@ class HelmholtzCoilLogic(LogicBase):
         
     
     def convertpols(self, pols):
-        d = int(pols)
-        op1 = np.floor(d/100)
-        if op1 == 0: x = 1
+        if pols[0] == "0": x = 1
         else: x = -1
-        op2 = np.remainder(d, 100)
-        if np.floor(op2) == 0: y = 1
+        if pols[1] == "0": y = 1
         else: y = -1
-        op3 = np.remainder(d,10)
-        if np.floor(op3) == 0: z = 1
+        if pols[2] == "0": z = 1
         else: z = -1
         print(x,y,z)
-        return x, y, z
+        return x, y, z, pols
 
     @property
     def magnet_state(self):
