@@ -7,51 +7,46 @@ from qudi.core.module import Base
 from qudi.core.configoption import ConfigOption
 from qudi.interface.helmholtz_coil_interface import HelmholtzCoilInterface, MagnetState
 from qudi.interface.helmholtz_coil_relay_interface import HelmholtzCoilRelayInterface
+import pyfirmata
 
 class HelmholtzCoilRelay(HelmholtzCoilRelayInterface):
     _relayaddress = ConfigOption("relay_address", missing="error")
+    _pins = ConfigOption("relay_pinouts", missing = "error")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def on_activate(self):
-        self.relay = serial.Serial(port=self._relayaddress, baudrate=9600, timeout=3) 
-        self.relay.flush()
+        self.relay = pyfirmata.Arduino(self._relayaddress)
+        it = pyfirmata.util.Iterator(self.relay)
+        it.start()
+        return
 
     def on_deactivate(self):
-        self.relay.close()
+        self.relay.exit()
+        self.relay.exit()
 
-    def _readline(self):
-        self.relay.readline()
 
-    def _write(self, command):
-        self.relay.read(bytes(command, 'utf-8'))
-    
-    def _flush(self):
-        self.relay.flush()
-    
-    def _sendBreak(self):
-        self.relay.sendBreak()
+    def polarizationflip(self, pol, channel1, channel2):
+        if pol=="1":
+            self.relay.digital[channel1].write(1)
+            self.relay.digital[channel2].write(1)
+        else: 
+            self.relay.digital[channel1].write(0)
+            self.relay.digital[channel2].write(0)
 
-    def setbfieldrelaypol(self, pols): ####neg = 1, pos = 0
-        "Writes the polarity to the Arduino relay. Must be a 3-bit string made of 0s and 1s"
-        settings = "set " + pols + '\n'
-        self._write(settings)
-        time.sleep(.1)
-        d = self._readline()
-        self._flush()
-        self._sendBreak()
-        self._flush()
-        return d
-    
+    def setbfieldrelaypol(self,pols):
+        self.polarizationflip(pols[0], self._pins[0], self._pins[1]) 
+        self.polarizationflip(pols[1], self._pins[2], self._pins[3])
+
+        self.polarizationflip(pols[2], self._pins[4], self._pins[5])
+
+        read = self.getbfieldrelaypol()
+        return read
+
     def getbfieldrelaypol(self):
-        "Reads the field polarities from the Arduino relay"
-        settings = 'get \n'
-        self._write(settings)
-        time.sleep(.1)
-        output = {}
-        d1 = self._readline()
-        self._flush()
-        self._sendBreak()
-        self._flush()
-        return d1
+        read = []
+        for i in self._pins:
+            read.append(self.relay.digital[i].read())
+        print(read)
+        return read

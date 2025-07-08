@@ -55,10 +55,9 @@ class HelmholtzCoilLogic(LogicBase):
         else: pols.append(1)
 
         pols = "".join(str(pol) for pol in pols)
-        print(self.relay)
         d = self.relay.setbfieldrelaypol(pols)
         d = self.relay.getbfieldrelaypol()
-        pols = self.convertpols(d)
+        pols = d[::2]
         print(pols)
         return d, pols
     
@@ -68,14 +67,15 @@ class HelmholtzCoilLogic(LogicBase):
         if self.magnet_state != MagnetState.ON:
             self._write("OUTP:STAT:ALL ON")
             print('magnet state check')
+            self.magnet_state = MagnetState.ON
         if MagnetState == 3:
             print("Error with magnet state!")
         else: 
             print("Magnet on")
 
         x,y,z, errs = self.fieldtocurrent(bnorm, phi, theta) ## Step 1 Convert input B field values to current values
-        print("Any clipped currents? ", errs)
-        print("x,y,z", x, y, z)
+        # print("Any clipped currents? ", errs)
+        # print("x,y,z", x, y, z)
 
         d,pols = self.setpolarity(x,y,z) ##Step 2 set the Arduino relay polarities
         # print("String sent to Arduino relay and string read from Arduino: ", d, pols) ###d and pols should be the same (pols is what you're trying to set, d is what is read out)
@@ -85,7 +85,6 @@ class HelmholtzCoilLogic(LogicBase):
         time.sleep(wait*0.001)
         dat = self.current.query3channels("CURR")
         print("Final readings from Keithley: ", dat)
-
         currents, field = self.getfield(dat, pols)
         print(currents, field)
         self.sigFieldReadChanged.emit(currents, field)
@@ -94,11 +93,15 @@ class HelmholtzCoilLogic(LogicBase):
 
 
     def getfield(self, dat, d):
-
-        self.xcurrent_read = d[0] * float(dat["X"]["CURR"])
-        self.ycurrent_read = d[1] * float(dat["Y"]["CURR"])
-        self.zcurrent_read = d[2] * float(dat["Z"]["CURR"])
-
+        pols = []
+        for i in d:
+            if i == 0: pols.append(1)
+            else: pols.append(-1)
+        print(pols)
+        self.xcurrent_read = pols[0] * float(dat["X"]["CURR"])
+        self.ycurrent_read = pols[1] * float(dat["Y"]["CURR"])
+        self.zcurrent_read = pols[2] * float(dat["Z"]["CURR"])
+        print(self.xcurrent_read, self.ycurrent_read, self.zcurrent_read)
         self.bnorm_read, self.phi_read, self.theta_read = self.currenttofield(self.xcurrent_read, self.ycurrent_read, self.zcurrent_read) ##Convert read values to field values
 
         print([self.xcurrent_read, self.ycurrent_read, self.zcurrent_read],  [self.bnorm_read, self.phi_read, self.theta_read], d)
@@ -109,11 +112,21 @@ class HelmholtzCoilLogic(LogicBase):
     def currenttofield(self, x1, y1, z1):
         "Converts the x,y,z current input values into bnorm, phi, and theta values using calibration parameters in fieldcoeffs"
         x = self.calibcurrtobfield(self._fieldcoeffs["X"], x1)
+        print('x', x)
         y = self.calibcurrtobfield(self._fieldcoeffs["Y"], y1)
+        print('y', y)
         z = self.calibcurrtobfield(self._fieldcoeffs["Z"], z1)
+        print('z', z)
         bnorm = np.sqrt(x**2 + y**2 + z**2)
-        phi = np.atan(y/x)
-        theta = np.acos(z/bnorm)
+        print('b', bnorm)
+        phi1= y/x
+        print(phi1)
+        phi = np.arctan(phi1)
+        print(phi)
+        theta = np.arccos(z/bnorm)
+        
+        print(theta)
+        print(x,y,z, bnorm, phi, theta)
 
         return bnorm, phi, theta
 
@@ -141,16 +154,6 @@ class HelmholtzCoilLogic(LogicBase):
         
         else: return x,y,z, [errx, erry, errz]
         
-    
-    def convertpols(self, pols):
-        if pols[0] == "0": x = 1
-        else: x = -1
-        if pols[1] == "0": y = 1
-        else: y = -1
-        if pols[2] == "0": z = 1
-        else: z = -1
-        print(x,y,z)
-        return x, y, z, pols
 
     @property
     def magnet_state(self):
@@ -181,7 +184,7 @@ class HelmholtzCoilLogic(LogicBase):
         with self._thread_lock:
             if self.module_state() == 'idle':
                 self.module_state.lock()
-                self.__timer.start()
+                # self.__timer.start()
 
     @QtCore.Slot()
     def stop_query_loop(self):
@@ -198,7 +201,7 @@ class HelmholtzCoilLogic(LogicBase):
 
         with self._thread_lock:
             if self.module_state() == 'locked':
-                self.__timer.stop()
+                # self.__timer.stop()
                 self.module_state.unlock()
 
     @QtCore.Slot(object)
@@ -225,12 +228,9 @@ class HelmholtzCoilLogic(LogicBase):
 
     @QtCore.Slot(float, float, float)
     def set_field(self, bnorm, phi, theta):
-        """ Set laser (diode) current """
         # with self._thread_lock:
         currents, field = self.setfield(bnorm, phi, theta)
-        print("looooooop")
-        self.sigFieldReadChanged.emit(currents, field)
-        print("emitted")
+        # self.sigFieldReadChanged.emit([currents, field])
 
         return currents, field
 

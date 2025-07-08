@@ -39,7 +39,7 @@ class LaserOutputDockWidget(AdvancedDockWidget):
         self.plot_widget = pg.PlotWidget(axisItems={'bottom': TimeAxisItem(orientation='bottom')})
         self.plot_widget.setLabel('bottom', 'Time', units=None)
         self.plot_widget.setLabel('left', 'Power', units='W', color=palette.c1.name())
-        self.plot_widget.setLabel('right', 'Current', color=palette.c3.name())
+        # self.plot_widget.setLabel('right', 'Current', color=palette.c3.name())
         self.plot_widget.setMouseEnabled(x=False, y=False)
         self.plot_widget.setMouseTracking(False)
         self.plot_widget.setMenuEnabled(False)
@@ -58,8 +58,8 @@ class LaserOutputDockWidget(AdvancedDockWidget):
         # Create plot data items
         self.power_data_item = pg.PlotCurveItem(pen=pg.mkPen(palette.c1, cosmetic=True),
                                                 antialias=True)
-        self.current_data_item = pg.PlotCurveItem(pen=pg.mkPen(palette.c3, cosmetic=True),
-                                                  antialias=True)
+        # self.current_data_item = pg.PlotCurveItem(pen=pg.mkPen(palette.c3, cosmetic=True),
+        #                                           antialias=True)
         self.setWidget(self.plot_widget)
         self.plot_widget.getPlotItem().setContentsMargins(0, 1, 5, 2)
 
@@ -89,40 +89,40 @@ class LaserOutputDockWidget(AdvancedDockWidget):
                 self.view_box2.addItem(self.current_data_item)
 
 
-class LaserTemperatureDockWidget(AdvancedDockWidget):
-    """
-    """
+# class LaserTemperatureDockWidget(AdvancedDockWidget):
+#     """
+#     """
 
-    def __init__(self, *args, curve_names, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.plot_widget = pg.PlotWidget(axisItems={'bottom': TimeAxisItem(orientation='bottom')})
-        self.plot_widget.setLabel('bottom', 'Time', units=None)
-        self.plot_widget.setLabel('left', 'Temperature', units='°C', color=palette.c1.name())
-        self.plot_widget.setMouseEnabled(x=False, y=False)
-        self.plot_widget.setMouseTracking(False)
-        self.plot_widget.setMenuEnabled(False)
-        self.plot_widget.hideButtons()
-        self.plot_widget.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.plot_widget.setMinimumSize(200, 200)
-        self.temperature_data_items = dict()
-        for ii, name in enumerate(curve_names):
-            color = getattr(palette, 'c{0:d}'.format((ii % 6) + 1))
-            self.temperature_data_items[name] = pg.PlotCurveItem(pen=pg.mkPen(color, cosmetic=True),
-                                                                 antialias=True)
-            self.plot_widget.addItem(self.temperature_data_items[name])
-        self.setWidget(self.plot_widget)
-        self.plot_widget.getPlotItem().setContentsMargins(0, 1, 5, 2)
+#     def __init__(self, *args, curve_names, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.plot_widget = pg.PlotWidget(axisItems={'bottom': TimeAxisItem(orientation='bottom')})
+#         self.plot_widget.setLabel('bottom', 'Time', units=None)
+#         self.plot_widget.setLabel('left', 'Temperature', units='°C', color=palette.c1.name())
+#         self.plot_widget.setMouseEnabled(x=False, y=False)
+#         self.plot_widget.setMouseTracking(False)
+#         self.plot_widget.setMenuEnabled(False)
+#         self.plot_widget.hideButtons()
+#         self.plot_widget.setFocusPolicy(QtCore.Qt.NoFocus)
+#         self.plot_widget.setMinimumSize(200, 200)
+#         self.temperature_data_items = dict()
+#         for ii, name in enumerate(curve_names):
+#             color = getattr(palette, 'c{0:d}'.format((ii % 6) + 1))
+#             self.temperature_data_items[name] = pg.PlotCurveItem(pen=pg.mkPen(color, cosmetic=True),
+#                                                                  antialias=True)
+#             self.plot_widget.addItem(self.temperature_data_items[name])
+#         self.setWidget(self.plot_widget)
+#         self.plot_widget.getPlotItem().setContentsMargins(0, 1, 5, 2)
 
-    def set_temperature_data(self, temp_dict, x=None):
-        for name, y_data in temp_dict.items():
-            item = self.temperature_data_items[name]
-            if y_data is None:
-                if item in self.plot_widget.items():
-                    self.plot_widget.removeItem(item)
-            else:
-                item.setData(y=y_data, x=x)
-                if item not in self.plot_widget.items():
-                    self.plot_widget.addItem(item)
+#     def set_temperature_data(self, temp_dict, x=None):
+#         for name, y_data in temp_dict.items():
+#             item = self.temperature_data_items[name]
+#             if y_data is None:
+#                 if item in self.plot_widget.items():
+#                     self.plot_widget.removeItem(item)
+#             else:
+#                 item.setData(y=y_data, x=x)
+#                 if item not in self.plot_widget.items():
+#                     self.plot_widget.addItem(item)
 
 
 class TimeAxisItem(pg.AxisItem):

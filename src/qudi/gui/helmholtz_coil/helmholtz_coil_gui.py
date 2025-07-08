@@ -67,9 +67,10 @@ class HelmholtzCoilMainWindow(QtWidgets.QMainWindow):
         label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         layout.addWidget(label, 0, 0)
 
-        self.coil_status_label = QtWidgets.QLabel('???')
+        self.coil_status_label = QtWidgets.QLabel("ON")
         self.coil_status_label.setFont(font)
         self.field_onoff_toggle = Toggle()
+        self.field_onoff_toggle.setChecked(True)
 
 
         layout.addWidget(self.coil_status_label, 0, 1)
@@ -238,8 +239,9 @@ class HelmholtzCoilGui(GuiBase):
 
         return
 
-    @QtCore.Slot(object, object)
+    @QtCore.Slot(object)
     def on_updated_fieldscurrents(self, currents, field):
+        print("signal received")
         self.control_dock_widget.bnorm_read.setText(str(field[0]))
         self.control_dock_widget.phi_read.setText(str(field[1]))
         self.control_dock_widget.theta_read.setText(str(field[2]))

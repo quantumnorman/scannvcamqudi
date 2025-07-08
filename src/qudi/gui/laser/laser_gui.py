@@ -26,11 +26,11 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from qudi.core.connector import Connector
 from qudi.util.colordefs import QudiPalettePale as palette
 from qudi.core.module import GuiBase
-from qudi.interface.simple_laser_interface import ControlMode, ShutterState, LaserState
+from qudi.interface.simple_laser_interface import ControlMode, LaserState#, ShutterState
 from qudi.util.paths import get_artwork_dir
 
 from .laser_control_dockwidget import LaserControlDockWidget
-from .laser_plot_dockwidgets import LaserOutputDockWidget, LaserTemperatureDockWidget
+from .laser_plot_dockwidgets import LaserOutputDockWidget#, LaserTemperatureDockWidget
 
 
 class LaserMainWindow(QtWidgets.QMainWindow):
@@ -74,10 +74,10 @@ class LaserMainWindow(QtWidgets.QMainWindow):
         self.action_view_output_graph.setCheckable(True)
         self.action_view_output_graph.setChecked(True)
         menu.addAction(self.action_view_output_graph)
-        self.action_view_temperature_graph = QtWidgets.QAction('Show Temperature Graph')
-        self.action_view_temperature_graph.setCheckable(True)
-        self.action_view_temperature_graph.setChecked(True)
-        menu.addAction(self.action_view_temperature_graph)
+        # self.action_view_temperature_graph = QtWidgets.QAction('Show Temperature Graph')
+        # self.action_view_temperature_graph.setCheckable(True)
+        # self.action_view_temperature_graph.setChecked(True)
+        # menu.addAction(self.action_view_temperature_graph)
         menu.addSeparator()
         self.action_view_default = QtWidgets.QAction('Restore Default')
         menu.addAction(self.action_view_default)
@@ -98,16 +98,16 @@ class LaserMainWindow(QtWidgets.QMainWindow):
         label.setFont(font)
         label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         layout.addWidget(label, 0, 0)
-        self.shutter_label = QtWidgets.QLabel('Shutter:')
-        self.shutter_label.setFont(font)
-        self.shutter_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        layout.addWidget(self.shutter_label, 1, 0)
+        # self.shutter_label = QtWidgets.QLabel('Shutter:')
+        # self.shutter_label.setFont(font)
+        # self.shutter_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        # layout.addWidget(self.shutter_label, 1, 0)
         self.laser_status_label = QtWidgets.QLabel('???')
         self.laser_status_label.setFont(font)
         layout.addWidget(self.laser_status_label, 0, 1)
-        self.shutter_status_label = QtWidgets.QLabel('???')
-        self.shutter_status_label.setFont(font)
-        layout.addWidget(self.shutter_status_label, 1, 1)
+        # self.shutter_status_label = QtWidgets.QLabel('???')
+        # self.shutter_status_label.setFont(font)
+        # layout.addWidget(self.shutter_status_label, 1, 1)
         status_bar.addPermanentWidget(widget, 1)
 
     def set_laser_state(self, state):
@@ -121,23 +121,23 @@ class LaserMainWindow(QtWidgets.QMainWindow):
             text = '???'
         self.laser_status_label.setText(text)
 
-    def set_shutter_state(self, state):
-        if state == ShutterState.OPEN:
-            text = 'OPEN'
-        elif state == ShutterState.CLOSED:
-            text = 'CLOSED'
-        elif state == ShutterState.NO_SHUTTER:
-            text = 'no shutter'
-        else:
-            text = '???'
-        self.shutter_status_label.setText(text)
-        if state == ShutterState.NO_SHUTTER:
-            if self.shutter_label.isVisible():
-                self.shutter_label.hide()
-                self.shutter_status_label.hide()
-        elif not self.shutter_label.isVisible():
-            self.shutter_label.show()
-            self.shutter_status_label.show()
+    # def set_shutter_state(self, state):
+    #     if state == ShutterState.OPEN:
+    #         text = 'OPEN'
+    #     elif state == ShutterState.CLOSED:
+    #         text = 'CLOSED'
+    #     elif state == ShutterState.NO_SHUTTER:
+    #         text = 'no shutter'
+    #     else:
+    #         text = '???'
+    #     self.shutter_status_label.setText(text)
+    #     if state == ShutterState.NO_SHUTTER:
+    #         if self.shutter_label.isVisible():
+    #             self.shutter_label.hide()
+    #             self.shutter_status_label.hide()
+    #     elif not self.shutter_label.isVisible():
+    #         self.shutter_label.show()
+    #         self.shutter_status_label.show()
 
 
 class LaserGui(GuiBase):
@@ -155,10 +155,10 @@ class LaserGui(GuiBase):
     _laser_logic = Connector(name='laser_logic', interface='LaserLogic')
 
     sigLaserToggled = QtCore.Signal(bool)
-    sigShutterToggled = QtCore.Signal(bool)
+    # sigShutterToggled = QtCore.Signal(bool)
     sigControlModeChanged = QtCore.Signal(object)
     sigPowerChanged = QtCore.Signal(float, object)
-    sigCurrentChanged = QtCore.Signal(float, object)
+    # sigCurrentChanged = QtCore.Signal(float, object)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -166,7 +166,7 @@ class LaserGui(GuiBase):
         self._mw = None
         self.control_dock_widget = None
         self.output_graph_dock_widget = None
-        self.temperature_graph_dock_widget = None
+        # self.temperature_graph_dock_widget = None
 
     def on_activate(self):
         """ Definition and initialisation of the GUI plus staring the measurement.
@@ -191,10 +191,10 @@ class LaserGui(GuiBase):
         self._mw.action_view_controls.triggered[bool].connect(self.control_dock_widget.setVisible)
         self.control_dock_widget.power_slider.setRange(*logic.power_range)
         self.control_dock_widget.power_setpoint_spinbox.setRange(*logic.power_range)
-        self.control_dock_widget.current_slider.setRange(*logic.current_range)
-        self.control_dock_widget.current_setpoint_spinbox.setRange(*logic.current_range)
-        self.control_dock_widget.current_setpoint_spinbox.setSuffix(logic.current_unit)
-        self.control_dock_widget.current_spinbox.setSuffix(logic.current_unit)
+        # self.control_dock_widget.current_slider.setRange(*logic.current_range)
+        # self.control_dock_widget.current_setpoint_spinbox.setRange(*logic.current_range)
+        # self.control_dock_widget.current_setpoint_spinbox.setSuffix(logic.current_unit)
+        # self.control_dock_widget.current_spinbox.setSuffix(logic.current_unit)
 
         self.output_graph_dock_widget = LaserOutputDockWidget()
         self.output_graph_dock_widget.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
@@ -206,59 +206,59 @@ class LaserGui(GuiBase):
         self._mw.action_view_output_graph.triggered[bool].connect(
             self.output_graph_dock_widget.setVisible
         )
-        self.output_graph_dock_widget.plot_widget.setLabel('right',
-                                                           'Current',
-                                                           units=logic.current_unit,
-                                                           color=palette.c3.name())
+        # self.output_graph_dock_widget.plot_widget.setLabel('right',
+        #                                                    'Current',
+        #                                                    units=logic.current_unit,
+        #                                                    color=palette.c3.name())
 
-        self.temperature_graph_dock_widget = LaserTemperatureDockWidget(
-            curve_names=tuple(logic.temperatures)
-        )
-        self.temperature_graph_dock_widget.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
-        self.temperature_graph_dock_widget.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
-        self._mw.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.temperature_graph_dock_widget)
-        self.temperature_graph_dock_widget.visibilityChanged.connect(
-            self._mw.action_view_temperature_graph.setChecked
-        )
-        self._mw.action_view_temperature_graph.triggered[bool].connect(
-            self.temperature_graph_dock_widget.setVisible
-        )
+        # self.temperature_graph_dock_widget = LaserTemperatureDockWidget(
+        #     curve_names=tuple(logic.temperatures)
+        # )
+        # self.temperature_graph_dock_widget.setFeatures(QtWidgets.QDockWidget.AllDockWidgetFeatures)
+        # self.temperature_graph_dock_widget.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
+        # self._mw.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.temperature_graph_dock_widget)
+        # self.temperature_graph_dock_widget.visibilityChanged.connect(
+        #     self._mw.action_view_temperature_graph.setChecked
+        # )
+        # self._mw.action_view_temperature_graph.triggered[bool].connect(
+        #     self.temperature_graph_dock_widget.setVisible
+        # )
 
         self.restore_default_view()
 
         # Initialize data from logic
         self._mw.extra_info_label.setText(logic.extra_info)
-        self._shutter_state_updated(logic.shutter_state)
+        # self._shutter_state_updated(logic.shutter_state)
         self._laser_state_updated(logic.laser_state)
         self._control_mode_updated(logic.control_mode)
-        self._current_setpoint_updated(logic.current_setpoint, None)
+        # self._current_setpoint_updated(logic.current_setpoint, None)
         self._power_setpoint_updated(logic.power_setpoint, None)
         self._data_updated(logic.data)
 
         # connect control dockwidget signals
         self.control_dock_widget.laser_button.clicked[bool].connect(self._laser_clicked)
-        self.control_dock_widget.shutter_button.clicked[bool].connect(self._shutter_clicked)
+        # self.control_dock_widget.shutter_button.clicked[bool].connect(self._shutter_clicked)
         self.control_dock_widget.sigControlModeChanged.connect(self._control_mode_clicked)
         self.control_dock_widget.power_slider.doubleSliderMoved.connect(self._power_slider_moving)
         self.control_dock_widget.power_slider.sliderReleased.connect(self._power_slider_moved)
-        self.control_dock_widget.current_slider.doubleSliderMoved.connect(
-            self._current_slider_moving
-        )
-        self.control_dock_widget.current_slider.sliderReleased.connect(self._current_slider_moved)
+        # self.control_dock_widget.current_slider.doubleSliderMoved.connect(
+        #     self._current_slider_moving
+        # )
+        # self.control_dock_widget.current_slider.sliderReleased.connect(self._current_slider_moved)
         self.control_dock_widget.power_setpoint_spinbox.editingFinished.connect(
             self._power_setpoint_edited
         )
-        self.control_dock_widget.current_setpoint_spinbox.editingFinished.connect(
-            self._current_setpoint_edited
-        )
+        # self.control_dock_widget.current_setpoint_spinbox.editingFinished.connect(
+        #     self._current_setpoint_edited
+        # )
 
         # connect remaining main window actions
         self._mw.action_view_default.triggered.connect(self.restore_default_view)
 
         # connect external signals to logic
         self.sigLaserToggled.connect(logic.set_laser_state)
-        self.sigShutterToggled.connect(logic.set_shutter_state)
-        self.sigCurrentChanged.connect(logic.set_current)
+        # self.sigShutterToggled.connect(logic.set_shutter_state)
+        # self.sigCurrentChanged.connect(logic.set_current)
         self.sigPowerChanged.connect(logic.set_power)
         self.sigControlModeChanged.connect(logic.set_control_mode)
 
@@ -266,14 +266,14 @@ class LaserGui(GuiBase):
         logic.sigPowerSetpointChanged.connect(
             self._power_setpoint_updated, QtCore.Qt.QueuedConnection
         )
-        logic.sigCurrentSetpointChanged.connect(
-            self._current_setpoint_updated, QtCore.Qt.QueuedConnection
-        )
+        # logic.sigCurrentSetpointChanged.connect(
+        #     self._current_setpoint_updated, QtCore.Qt.QueuedConnection
+        # )
         logic.sigControlModeChanged.connect(self._control_mode_updated, QtCore.Qt.QueuedConnection)
         logic.sigLaserStateChanged.connect(self._laser_state_updated, QtCore.Qt.QueuedConnection)
-        logic.sigShutterStateChanged.connect(
-            self._shutter_state_updated, QtCore.Qt.QueuedConnection
-        )
+        # logic.sigShutterStateChanged.connect(
+        #     self._shutter_state_updated, QtCore.Qt.QueuedConnection
+        # )
         logic.sigDataChanged.connect(self._data_updated, QtCore.Qt.QueuedConnection)
 
         self.show()
@@ -284,33 +284,33 @@ class LaserGui(GuiBase):
         self._mw.close()
         self.output_graph_dock_widget.visibilityChanged.disconnect()
         self._mw.action_view_output_graph.triggered[bool].disconnect()
-        self.temperature_graph_dock_widget.visibilityChanged.disconnect()
-        self._mw.action_view_temperature_graph.triggered[bool].disconnect()
+        # self.temperature_graph_dock_widget.visibilityChanged.disconnect()
+        # self._mw.action_view_temperature_graph.triggered[bool].disconnect()
 
         # disconnect all signals
         logic = self._laser_logic()
         logic.sigPowerSetpointChanged.disconnect(self._power_setpoint_updated)
-        logic.sigCurrentSetpointChanged.disconnect(self._current_setpoint_updated)
+        # logic.sigCurrentSetpointChanged.disconnect(self._current_setpoint_updated)
         logic.sigControlModeChanged.disconnect(self._control_mode_updated)
         logic.sigLaserStateChanged.disconnect(self._laser_state_updated)
-        logic.sigShutterStateChanged.disconnect(self._shutter_state_updated)
+        # logic.sigShutterStateChanged.disconnect(self._shutter_state_updated)
         logic.sigDataChanged.disconnect(self._data_updated)
 
         self.control_dock_widget.visibilityChanged.disconnect()
         self._mw.action_view_controls.triggered.disconnect()
         self.control_dock_widget.laser_button.clicked[bool].disconnect()
-        self.control_dock_widget.shutter_button.clicked[bool].disconnect()
+        # self.control_dock_widget.shutter_button.clicked[bool].disconnect()
         self.control_dock_widget.sigControlModeChanged.disconnect()
         self.control_dock_widget.power_slider.doubleSliderMoved.disconnect()
         self.control_dock_widget.power_slider.sliderReleased.disconnect()
-        self.control_dock_widget.current_slider.doubleSliderMoved.disconnect()
-        self.control_dock_widget.current_slider.sliderReleased.disconnect()
+        # self.control_dock_widget.current_slider.doubleSliderMoved.disconnect()
+        # self.control_dock_widget.current_slider.sliderReleased.disconnect()
         self.control_dock_widget.power_setpoint_spinbox.editingFinished.disconnect()
-        self.control_dock_widget.current_setpoint_spinbox.editingFinished.disconnect()
+        # self.control_dock_widget.current_setpoint_spinbox.editingFinished.disconnect()
         self._mw.action_view_default.triggered.disconnect()
         self.sigLaserToggled.disconnect()
-        self.sigShutterToggled.disconnect()
-        self.sigCurrentChanged.disconnect()
+        # self.sigShutterToggled.disconnect()
+        # self.sigCurrentChanged.disconnect()
         self.sigPowerChanged.disconnect()
         self.sigControlModeChanged.disconnect()
 
@@ -327,16 +327,16 @@ class LaserGui(GuiBase):
         # Show any hidden dock widgets
         self.control_dock_widget.show()
         self.output_graph_dock_widget.show()
-        self.temperature_graph_dock_widget.show()
+        # self.temperature_graph_dock_widget.show()
 
         # re-dock any floating dock widgets
         self.output_graph_dock_widget.setFloating(False)
-        self.temperature_graph_dock_widget.setFloating(False)
+        # self.temperature_graph_dock_widget.setFloating(False)
 
         # Arrange docks widgets
         self._mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.control_dock_widget)
         self._mw.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.output_graph_dock_widget)
-        self._mw.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.temperature_graph_dock_widget)
+        # self._mw.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.temperature_graph_dock_widget)
 
     @QtCore.Slot(bool)
     def _laser_clicked(self, checked):
@@ -348,15 +348,15 @@ class LaserGui(GuiBase):
         self.control_dock_widget.laser_button.setEnabled(False)
         self.sigLaserToggled.emit(checked)
 
-    @QtCore.Slot(bool)
-    def _shutter_clicked(self, checked):
-        """ Shutter button callback. Disables button and sends a signal to the logic. Logic
-        response will enable the button again.
+    # @QtCore.Slot(bool)
+    # def _shutter_clicked(self, checked):
+    #     """ Shutter button callback. Disables button and sends a signal to the logic. Logic
+    #     response will enable the button again.
 
-        @param bool checked: Button check state after click
-        """
-        self.control_dock_widget.shutter_button.setEnabled(False)
-        self.sigShutterToggled.emit(checked)
+    #     @param bool checked: Button check state after click
+    #     """
+    #     self.control_dock_widget.shutter_button.setEnabled(False)
+    #     self.sigShutterToggled.emit(checked)
 
     @QtCore.Slot(object)
     def _control_mode_clicked(self, mode):
@@ -365,9 +365,9 @@ class LaserGui(GuiBase):
 
         @param ControlMode mode: Selected ControlMode enum
         """
-        self.control_dock_widget.control_current_radio_button.setEnabled(False)
-        self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
-        self.control_dock_widget.current_slider.setEnabled(False)
+        # self.control_dock_widget.control_current_radio_button.setEnabled(False)
+        # self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
+        # self.control_dock_widget.current_slider.setEnabled(False)
         self.control_dock_widget.control_power_radio_button.setEnabled(False)
         self.control_dock_widget.power_setpoint_spinbox.setEnabled(False)
         self.control_dock_widget.power_slider.setEnabled(False)
@@ -379,11 +379,11 @@ class LaserGui(GuiBase):
         """
         self.control_dock_widget.power_setpoint_spinbox.setValue(value)
 
-    @QtCore.Slot(float)
-    def _current_slider_moving(self, value):
-        """ ToDo: Document
-        """
-        self.control_dock_widget.current_setpoint_spinbox.setValue(value)
+    # @QtCore.Slot(float)
+    # def _current_slider_moving(self, value):
+    #     """ ToDo: Document
+    #     """
+        # self.control_dock_widget.current_setpoint_spinbox.setValue(value)
 
     @QtCore.Slot()
     def _power_slider_moved(self):
@@ -393,13 +393,13 @@ class LaserGui(GuiBase):
         self.control_dock_widget.power_setpoint_spinbox.setValue(value)
         self.sigPowerChanged.emit(value, self.module_uuid)
 
-    @QtCore.Slot()
-    def _current_slider_moved(self):
-        """ ToDo: Document
-        """
-        value = self.control_dock_widget.current_slider.value()
-        self.control_dock_widget.current_setpoint_spinbox.setValue(value)
-        self.sigCurrentChanged.emit(value, self.module_uuid)
+    # @QtCore.Slot()
+    # def _current_slider_moved(self):
+    #     """ ToDo: Document
+    #     """
+    #     value = self.control_dock_widget.current_slider.value()
+    #     self.control_dock_widget.current_setpoint_spinbox.setValue(value)
+    #     self.sigCurrentChanged.emit(value, self.module_uuid)
 
     @QtCore.Slot()
     def _power_setpoint_edited(self):
@@ -409,13 +409,13 @@ class LaserGui(GuiBase):
         self.control_dock_widget.power_slider.setValue(value)
         self.sigPowerChanged.emit(value, self.module_uuid)
 
-    @QtCore.Slot()
-    def _current_setpoint_edited(self):
-        """ ToDo: Document
-        """
-        value = self.control_dock_widget.current_setpoint_spinbox.value()
-        self.control_dock_widget.current_slider.setValue(value)
-        self.sigCurrentChanged.emit(value, self.module_uuid)
+    # @QtCore.Slot()
+    # def _current_setpoint_edited(self):
+    #     """ ToDo: Document
+    #     """
+    #     value = self.control_dock_widget.current_setpoint_spinbox.value()
+    #     self.control_dock_widget.current_slider.setValue(value)
+    #     self.sigCurrentChanged.emit(value, self.module_uuid)
 
     @QtCore.Slot(float, object)
     def _power_setpoint_updated(self, value, caller_id):
@@ -423,37 +423,37 @@ class LaserGui(GuiBase):
             self.control_dock_widget.power_setpoint_spinbox.setValue(value)
             self.control_dock_widget.power_slider.setValue(value)
 
-    @QtCore.Slot(float, object)
-    def _current_setpoint_updated(self, value, caller_id):
-        if caller_id != self.module_uuid:
-            self.control_dock_widget.current_setpoint_spinbox.setValue(value)
-            self.control_dock_widget.current_slider.setValue(value)
+    # @QtCore.Slot(float, object)
+    # def _current_setpoint_updated(self, value, caller_id):
+    #     if caller_id != self.module_uuid:
+    #         self.control_dock_widget.current_setpoint_spinbox.setValue(value)
+    #         self.control_dock_widget.current_slider.setValue(value)
 
     @QtCore.Slot(object)
     def _control_mode_updated(self, mode):
         if mode == ControlMode.POWER:
-            self.control_dock_widget.current_slider.setEnabled(False)
-            self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
+            # self.control_dock_widget.current_slider.setEnabled(False)
+            # self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
             self.control_dock_widget.power_slider.setEnabled(True)
             self.control_dock_widget.power_setpoint_spinbox.setEnabled(True)
             self.control_dock_widget.control_power_radio_button.setChecked(True)
             self.control_dock_widget.control_power_radio_button.setEnabled(True)
-            self.control_dock_widget.control_current_radio_button.setEnabled(True)
+            # self.control_dock_widget.control_current_radio_button.setEnabled(True)
         elif mode == ControlMode.CURRENT:
             self.control_dock_widget.power_slider.setEnabled(False)
             self.control_dock_widget.power_setpoint_spinbox.setEnabled(False)
-            self.control_dock_widget.current_slider.setEnabled(True)
-            self.control_dock_widget.current_setpoint_spinbox.setEnabled(True)
-            self.control_dock_widget.control_current_radio_button.setChecked(True)
+            # self.control_dock_widget.current_slider.setEnabled(True)
+            # self.control_dock_widget.current_setpoint_spinbox.setEnabled(True)
+            # self.control_dock_widget.control_current_radio_button.setChecked(True)
             self.control_dock_widget.control_power_radio_button.setEnabled(True)
-            self.control_dock_widget.control_current_radio_button.setEnabled(True)
+            # self.control_dock_widget.control_current_radio_button.setEnabled(True)
         else:
-            self.control_dock_widget.current_slider.setEnabled(False)
-            self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
+            # self.control_dock_widget.current_slider.setEnabled(False)
+            # self.control_dock_widget.current_setpoint_spinbox.setEnabled(False)
             self.control_dock_widget.power_slider.setEnabled(False)
             self.control_dock_widget.power_setpoint_spinbox.setEnabled(False)
             self.control_dock_widget.control_power_radio_button.setEnabled(False)
-            self.control_dock_widget.control_current_radio_button.setEnabled(False)
+            # self.control_dock_widget.control_current_radio_button.setEnabled(False)
 
     @QtCore.Slot(object)
     def _laser_state_updated(self, state):
@@ -478,28 +478,28 @@ class LaserGui(GuiBase):
             if self.control_dock_widget.laser_button.isVisible():
                 self.control_dock_widget.laser_button.setVisible(False)
 
-    @QtCore.Slot(object)
-    def _shutter_state_updated(self, state):
-        self._mw.set_shutter_state(state)
-        if state == ShutterState.OPEN:
-            self.control_dock_widget.shutter_button.setChecked(True)
-            self.control_dock_widget.shutter_button.setEnabled(True)
-            if not self.control_dock_widget.shutter_button.isVisible():
-                self.control_dock_widget.shutter_button.setVisible(True)
-        elif state == ShutterState.CLOSED:
-            self.control_dock_widget.shutter_button.setChecked(False)
-            self.control_dock_widget.shutter_button.setEnabled(True)
-            if not self.control_dock_widget.shutter_button.isVisible():
-                self.control_dock_widget.shutter_button.setVisible(True)
-        elif state == ShutterState.NO_SHUTTER:
-            self.control_dock_widget.shutter_button.setEnabled(False)
-            self.control_dock_widget.shutter_button.setChecked(False)
-            if self.control_dock_widget.shutter_button.isVisible():
-                self.control_dock_widget.shutter_button.setVisible(False)
-        else:
-            self.control_dock_widget.shutter_button.setEnabled(False)
-            if self.control_dock_widget.shutter_button.isVisible():
-                self.control_dock_widget.shutter_button.setVisible(False)
+    # @QtCore.Slot(object)
+    # def _shutter_state_updated(self, state):
+    #     self._mw.set_shutter_state(state)
+    #     if state == ShutterState.OPEN:
+    #         self.control_dock_widget.shutter_button.setChecked(True)
+    #         self.control_dock_widget.shutter_button.setEnabled(True)
+    #         if not self.control_dock_widget.shutter_button.isVisible():
+    #             self.control_dock_widget.shutter_button.setVisible(True)
+    #     elif state == ShutterState.CLOSED:
+    #         self.control_dock_widget.shutter_button.setChecked(False)
+    #         self.control_dock_widget.shutter_button.setEnabled(True)
+    #         if not self.control_dock_widget.shutter_button.isVisible():
+    #             self.control_dock_widget.shutter_button.setVisible(True)
+    #     elif state == ShutterState.NO_SHUTTER:
+    #         self.control_dock_widget.shutter_button.setEnabled(False)
+    #         self.control_dock_widget.shutter_button.setChecked(False)
+    #         if self.control_dock_widget.shutter_button.isVisible():
+    #             self.control_dock_widget.shutter_button.setVisible(False)
+    #     else:
+    #         self.control_dock_widget.shutter_button.setEnabled(False)
+    #         if self.control_dock_widget.shutter_button.isVisible():
+    #             self.control_dock_widget.shutter_button.setVisible(False)
 
     @QtCore.Slot(dict)
     def _data_updated(self, data):
@@ -513,8 +513,8 @@ class LaserGui(GuiBase):
         self.output_graph_dock_widget.set_power_data(y=y, x=x)
         self.control_dock_widget.power_spinbox.setValue(-1 if y is None else y[-1])
 
-        y = data.pop('current', None)
-        self.output_graph_dock_widget.set_current_data(y=y, x=x)
-        self.control_dock_widget.current_spinbox.setValue(-1 if y is None else y[-1])
+        # y = data.pop('current', None)
+        # self.output_graph_dock_widget.set_current_data(y=y, x=x)
+        # self.control_dock_widget.current_spinbox.setValue(-1 if y is None else y[-1])
 
-        self.temperature_graph_dock_widget.set_temperature_data(temp_dict=data, x=x)
+        # self.temperature_graph_dock_widget.set_temperature_data(temp_dict=data, x=x)

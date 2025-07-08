@@ -26,15 +26,15 @@ from qudi.core.module import Base
 
 class ControlMode(IntEnum):
     POWER = 0
-    CURRENT = 1
+    # CURRENT = 1
     UNKNOWN = 2
 
 
-class ShutterState(IntEnum):
-    CLOSED = 0
-    OPEN = 1
-    NO_SHUTTER = 2
-    UNKNOWN = 3
+# class ShutterState(IntEnum):
+#     CLOSED = 0
+#     OPEN = 1
+#     NO_SHUTTER = 2
+#     UNKNOWN = 3
 
 
 class LaserState(IntEnum):
@@ -85,69 +85,69 @@ class SimpleLaserInterface(Base):
         """
         pass
 
-    @abstractmethod
-    def get_current_unit(self):
-        """ Get unit for laser current.
+    # @abstractmethod
+    # def get_current_unit(self):
+    #     """ Get unit for laser current.
 
-        @return str: unit
-        """
-        pass
+    #     @return str: unit
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_current(self):
-        """ Get actual laser current
+    # @abstractmethod
+    # def get_current(self):
+    #     """ Get actual laser current
 
-        @return float: laser current in current units
-        """
-        pass
+    #     @return float: laser current in current units
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_current_range(self):
-        """ Get laser current range.
+    # @abstractmethod
+    # def get_current_range(self):
+    #     """ Get laser current range.
 
-        @return float[2]: laser current range
-        """
-        pass
+    #     @return float[2]: laser current range
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_current_setpoint(self):
-        """ Get laser current setpoint
+    # @abstractmethod
+    # def get_current_setpoint(self):
+    #     """ Get laser current setpoint
 
-        @return float: laser current setpoint
-        """
-        pass
+    #     @return float: laser current setpoint
+    #     """
+    #     pass
 
-    @abstractmethod
-    def set_current(self, current):
-        """ Set laser current setpoint
+    # @abstractmethod
+    # def set_current(self, current):
+    #     """ Set laser current setpoint
 
-        @param float current: desired laser current setpoint
-        """
-        pass
+    #     @param float current: desired laser current setpoint
+    #     """
+    #     pass
 
-    @abstractmethod
-    def allowed_control_modes(self):
-        """ Get supported control modes
+    # @abstractmethod
+    # def allowed_control_modes(self):
+    #     """ Get supported control modes
 
-        @return frozenset: set of supported ControlMode enums
-        """
-        pass
+    #     @return frozenset: set of supported ControlMode enums
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_control_mode(self):
-        """ Get the currently active control mode
+    # @abstractmethod
+    # def get_control_mode(self):
+    #     """ Get the currently active control mode
 
-        @return ControlMode: active control mode enum
-        """
-        pass
+    #     @return ControlMode: active control mode enum
+    #     """
+    #     pass
 
-    @abstractmethod
-    def set_control_mode(self, control_mode):
-        """ Set the active control mode
+    # @abstractmethod
+    # def set_control_mode(self, control_mode):
+    #     """ Set the active control mode
 
-        @param ControlMode control_mode: desired control mode enum
-        """
-        pass
+    #     @param ControlMode control_mode: desired control mode enum
+    #     """
+    #     pass
 
     @abstractmethod
     def get_laser_state(self):
@@ -165,33 +165,33 @@ class SimpleLaserInterface(Base):
         """
         pass
 
-    @abstractmethod
-    def get_shutter_state(self):
-        """ Get laser shutter state
+    # @abstractmethod
+    # def get_shutter_state(self):
+    #     """ Get laser shutter state
 
-        @return ShutterState: actual laser shutter state
-        """
-        pass
+    #     @return ShutterState: actual laser shutter state
+    #     """
+    #     pass
 
-    @abstractmethod
-    def set_shutter_state(self, state):
-        """ Set laser shutter state.
+    # @abstractmethod
+    # def set_shutter_state(self, state):
+    #     """ Set laser shutter state.
 
-        @param ShutterState state: desired laser shutter state
-        """
-        pass
+    #     @param ShutterState state: desired laser shutter state
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_temperatures(self):
-        """ Get all available temperatures.
+    # @abstractmethod
+    # def get_temperatures(self):
+    #     """ Get all available temperatures.
 
-        @return dict: dict of temperature names and value in degrees Celsius
-        """
-        pass
+    #     @return dict: dict of temperature names and value in degrees Celsius
+    #     """
+    #     pass
 
-    @abstractmethod
-    def get_extra_info(self):
-        """ Show dianostic information about lasers.
-          @return str: diagnostic info as a string
-        """
-        pass
+    # @abstractmethod
+    # def get_extra_info(self):
+    #     """ Show dianostic information about lasers.
+    #       @return str: diagnostic info as a string
+    #     """
+    #     pass
