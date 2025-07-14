@@ -205,7 +205,7 @@ class TimeSeriesReaderLogic(LogicBase):
             self._trace_times /= self.data_rate
 
         # raw data buffers
-        self._data_buffer = np.empty(channel_count * self._channel_buffer_size,
+        self._data_buffer = np.zeros(shape=(channel_count, self._channel_buffer_size),
                                      dtype=constraints.data_type)
         if constraints.sample_timing == SampleTiming.TIMESTAMP:
             self._times_buffer = np.zeros(self._channel_buffer_size, dtype=np.float64)

@@ -29,56 +29,18 @@ from typing import Tuple, List, Optional, Sequence, Union
 from nidaqmx._lib import lib_importer  # Due to NIDAQmx C-API bug needed to bypass property getter
 from nidaqmx.stream_readers import CounterReader
 from nidaqmx.stream_readers import AnalogMultiChannelReader as _AnalogMultiChannelReader
-from nidaqmx.constants import FillMode, READ_ALL_AVAILABLE
-try:
-    from nidaqmx._task_modules.read_functions import _read_analog_f_64
-except ImportError:
-    pass
+from nidaqmx.constants import FillMode, READ_ALL_AVAILABLE, Edge, AcquisitionType
 
 from qudi.core.configoption import ConfigOption
 from qudi.util.helpers import natural_sort
 from qudi.util.constraints import ScalarConstraint
 from qudi.interface.data_instream_interface import DataInStreamInterface, DataInStreamConstraints
 from qudi.interface.data_instream_interface import StreamingMode, SampleTiming
+from numpy import zeros, average
+from time import sleep
 
 
-class AnalogMultiChannelReader(_AnalogMultiChannelReader):
-    __doc__ = _AnalogMultiChannelReader.__doc__
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @wraps(_AnalogMultiChannelReader.read_many_sample)
-    def read_many_sample(self,
-                         data,
-                         number_of_samples_per_channel=READ_ALL_AVAILABLE,
-                         timeout=10.0):
-        number_of_samples_per_channel = (
-            self._task._calculate_num_samps_per_chan(number_of_samples_per_channel)
-        )
-
-        self._verify_array(data, number_of_samples_per_channel, False, True)
-
-        try:
-            _, samps_per_chan_read = self._interpreter.read_analog_f64(
-                self._handle,
-                number_of_samples_per_channel,
-                timeout,
-                FillMode.GROUP_BY_SCAN_NUMBER.value,
-                data
-            )
-        except AttributeError:
-            samps_per_chan_read = _read_analog_f_64(
-                self._handle,
-                data,
-                number_of_samples_per_channel,
-                timeout,
-                fill_mode=FillMode.GROUP_BY_SCAN_NUMBER
-            )
-        return samps_per_chan_read
-
-
-class NIXSeriesInStreamer(DataInStreamInterface):
+class NI600XSeriesInStreamer(DataInStreamInterface):
     """
     A National Instruments device that can detect and count digital pulses and measure analog
     voltages as data stream.
@@ -89,8 +51,8 @@ class NIXSeriesInStreamer(DataInStreamInterface):
 
     Example config for copy-paste:
 
-    nicard_6343_instreamer:
-        module.Class: 'ni_x_series.ni_x_series_in_streamer.NIXSeriesInStreamer'
+    nicard_600x_instreamer:
+        module.Class: 'ni_600x_series.ni_600x_series_in_streamer.NI600XSeriesInStreamer'
         options:
             device_name: 'Dev1'
             digital_sources:  # optional
@@ -107,7 +69,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
     """
 
     # config options
-    _device_name = ConfigOption(name='device_name', default='Dev1', missing='warn')
+    _device_name = ConfigOption(name='device_name', default='Dev3', missing='warn')
     _digital_sources = ConfigOption(name='digital_sources', default=tuple(), missing='info')
     _analog_sources = ConfigOption(name='analog_sources', default=tuple(), missing='info')
     _external_sample_clock_source = ConfigOption(name='external_sample_clock_source',
@@ -158,13 +120,13 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         """
         # Check if device is connected and set device to use
         dev_names = ni.system.System().devices.device_names
-        if self._device_name.lower() not in set(dev.lower() for dev in dev_names):
+        if self._device_name not in dev_names:
             raise ValueError(
                 f'Device name "{self._device_name}" not found in list of connected devices: '
                 f'{dev_names}\nActivation of NIXSeriesInStreamer failed!'
             )
         for dev in dev_names:
-            if dev.lower() == self._device_name.lower():
+            if dev == self._device_name:
                 self._device_name = dev
                 break
         self._device_handle = ni.system.Device(self._device_name)
@@ -173,10 +135,10 @@ class NIXSeriesInStreamer(DataInStreamInterface):
             ctr.split('/')[-1] for ctr in self._device_handle.co_physical_chans.channel_names if
             'ctr' in ctr.lower()
         )
-        self.__all_digital_terminals = tuple(
-            term.rsplit('/', 1)[-1].lower() for term in self._device_handle.terminals if
-            'PFI' in term
-        )
+        # self.__all_digital_terminals = tuple(
+        #     term.rsplit('/', 1)[-1].lower() for term in self._device_handle.terminals if
+        #     'PFI' in term
+        # )
         self.__all_analog_terminals = tuple(
             term.rsplit('/', 1)[-1].lower() for term in
             self._device_handle.ai_physical_chans.channel_names
@@ -594,6 +556,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                 # Try to reserve resources for the task
                 try:
                     task.control(ni.constants.TaskMode.TASK_RESERVE)
+                    print("task reserve")
                 except ni.DaqError as err:
                     # Try to clean up task handle
                     try:
@@ -612,6 +575,18 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                 else:
                     self._clk_task_handle = task
                     break
+        print("clk task init")
+        print(self._clk_task_handle)
+        # self._clk_task_handle = ni.Task(f'SampleClock_{id(self):d}')
+        # self._clk_task_handle.co_channels.add_co_pulse_chan_freq(f'/{self._device_name}/{src}',
+        #                                                     freq=self.__sample_rate,
+        #                                                     idle_state=ni.constants.Level.LOW)
+        # self._clk_task_handle.timing.cfg_implicit_timing(
+        #                 sample_mode=ni.constants.AcquisitionType.CONTINUOUS
+        #             )
+        # self._clk_task_handle.control(ni.constants.TaskMode.TASK_RESERVE)
+        # print("clktask", self._clk_task_handle)
+
 
     def _init_digital_tasks(self):
         """ Set up tasks for digital event counting. """
