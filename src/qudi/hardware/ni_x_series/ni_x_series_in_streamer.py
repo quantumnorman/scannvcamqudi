@@ -28,13 +28,13 @@ from functools import wraps
 from typing import Tuple, List, Optional, Sequence, Union
 from nidaqmx._lib import lib_importer  # Due to NIDAQmx C-API bug needed to bypass property getter
 from nidaqmx.stream_readers import CounterReader
-from nidaqmx.stream_readers import AnalogMultiChannelReader as _AnalogMultiChannelReader
+# from nidaqmx.stream_readers import AnalogMultiChannelReader as _AnalogMultiChannelReader
 from nidaqmx.constants import FillMode, READ_ALL_AVAILABLE
-try:
-    from nidaqmx._task_modules.read_functions import _read_analog_f_64
-except ImportError:
-    pass
-
+# try:
+#     from nidaqmx._task_modules.read_functions import _read_analog_f_64
+# except ImportError:
+    # pass
+from nidaqmx.stream_readers import AnalogMultiChannelReader
 from qudi.core.configoption import ConfigOption
 from qudi.util.helpers import natural_sort
 from qudi.util.constraints import ScalarConstraint
@@ -42,40 +42,40 @@ from qudi.interface.data_instream_interface import DataInStreamInterface, DataIn
 from qudi.interface.data_instream_interface import StreamingMode, SampleTiming
 
 
-class AnalogMultiChannelReader(_AnalogMultiChannelReader):
-    __doc__ = _AnalogMultiChannelReader.__doc__
+# class AnalogMultiChannelReader(_AnalogMultiChannelReader):
+#     __doc__ = _AnalogMultiChannelReader.__doc__
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
 
-    @wraps(_AnalogMultiChannelReader.read_many_sample)
-    def read_many_sample(self,
-                         data,
-                         number_of_samples_per_channel=READ_ALL_AVAILABLE,
-                         timeout=10.0):
-        number_of_samples_per_channel = (
-            self._task._calculate_num_samps_per_chan(number_of_samples_per_channel)
-        )
+#     @wraps(_AnalogMultiChannelReader.read_many_sample)
+#     def read_many_sample(self,
+#                          data,
+#                          number_of_samples_per_channel=READ_ALL_AVAILABLE,
+#                          timeout=10.0):
+#         number_of_samples_per_channel = (
+#             self._task._calculate_num_samps_per_chan(number_of_samples_per_channel)
+#         )
 
-        self._verify_array(data, number_of_samples_per_channel, False, True)
+#         self._verify_array(data, number_of_samples_per_channel, False, True)
 
-        try:
-            _, samps_per_chan_read = self._interpreter.read_analog_f64(
-                self._handle,
-                number_of_samples_per_channel,
-                timeout,
-                FillMode.GROUP_BY_SCAN_NUMBER.value,
-                data
-            )
-        except AttributeError:
-            samps_per_chan_read = _read_analog_f_64(
-                self._handle,
-                data,
-                number_of_samples_per_channel,
-                timeout,
-                fill_mode=FillMode.GROUP_BY_SCAN_NUMBER
-            )
-        return samps_per_chan_read
+#         try:
+#             _, samps_per_chan_read = self._interpreter.read_analog_f64(
+#                 self._handle,
+#                 number_of_samples_per_channel,
+#                 timeout,
+#                 FillMode.GROUP_BY_SCAN_NUMBER.value,
+#                 data
+#             )
+#         except AttributeError:
+#             samps_per_chan_read = _read_analog_f_64(
+#                 self._handle,
+#                 data,
+#                 number_of_samples_per_channel,
+#                 timeout,
+#                 fill_mode=FillMode.GROUP_BY_SCAN_NUMBER
+#             )
+#         return samps_per_chan_read
 
 
 class NIXSeriesInStreamer(DataInStreamInterface):
@@ -225,6 +225,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         # Create constraints
         channel_units = {chnl: 'counts/s' for chnl in self._digital_sources}
         channel_units.update({chnl: 'V' for chnl in self._analog_sources})
+        print("channel units", channel_units)
         self._constraints = DataInStreamConstraints(
             channel_units=channel_units,
             sample_timing=SampleTiming.CONSTANT,
@@ -349,11 +350,14 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         self.__buffer_size = channel_buffer_size
         self.__sample_rate = sample_rate
         digital_count = len([ch for ch in self.__active_channels if ch in self._digital_sources])
+        print("digital channels", digital_count)
         analog_count = len(self.__active_channels) - digital_count
+        print("active channels", self.__active_channels)
         self.__tmp_buffer = np.empty(
             self.__buffer_size * max(analog_count, int(digital_count > 0)),
             dtype=self._constraints.data_type
         )
+        
 
     @property
     def available_samples(self):
@@ -365,6 +369,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                 return self._di_task_handles[0].in_stream.avail_samp_per_chan
             else:
                 return self._ai_task_handle.in_stream.avail_samp_per_chan
+
         else:
             return 0
 
@@ -427,14 +432,16 @@ class NIXSeriesInStreamer(DataInStreamInterface):
             raise TypeError(
                 f'data_buffer must be numpy.ndarray with dtype {self._constraints.data_type}'
             )
-
         channel_count = len(self.__active_channels)
+        print("ch#annel count", channel_count)
+
         digital_count = len(self._di_readers)
         analog_count = channel_count - digital_count
         if samples_per_channel is None:
             samples_per_channel = len(data_buffer) // channel_count
         total_samples = channel_count * samples_per_channel
         if samples_per_channel > 0:
+            print("samples per channel", samples_per_channel)
             try:
                 channel_offset = 0
                 # Read digital channels
@@ -451,6 +458,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                     channel_offset += 1
                 # Read analog channels
                 if self._ai_reader is not None:
+                    print("channel offset", channel_offset)
                     if channel_offset == 0:
                         read_samples = self._ai_reader.read_many_sample(
                             data_buffer,
@@ -738,8 +746,8 @@ class NIXSeriesInStreamer(DataInStreamInterface):
     def _init_analog_task(self):
         """ Set up task for analog voltage measurement. """
         all_channels = list(self._constraints.channel_units)
-        analog_channels = [ch for ch in all_channels[len(self._digital_sources):] if
-                           ch in self.__active_channels]
+        analog_channels = [ch for ch in all_channels[len(self._digital_sources):] if ch in self.__active_channels]
+        print(analog_channels)
         if analog_channels:
             if self._ai_task_handle:
                 raise RuntimeError('Analog input task has already been generated')
@@ -760,6 +768,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
             task_name = f'AnalogIn_{id(self):d}'
             try:
                 ai_task = ni.Task(task_name)
+                print("task name", task_name)
             except ni.DaqError as err:
                 raise RuntimeError(
                     f'Unable to create analog-in task with name "{task_name}"'
@@ -767,6 +776,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
 
             try:
                 ai_ch_str = ','.join([f'/{self._device_name}/{ch}' for ch in analog_channels])
+                print("ai channel string", ai_ch_str)
                 ai_task.ai_channels.add_ai_voltage_chan(ai_ch_str,
                                                         max_val=max(self._adc_voltage_range),
                                                         min_val=min(self._adc_voltage_range))
@@ -777,6 +787,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                     sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
                     samps_per_chan=self.__buffer_size
                 )
+                print(ai_task.ai_channels.channel_names, )
             except ni.DaqError as err:
                 try:
                     del ai_task

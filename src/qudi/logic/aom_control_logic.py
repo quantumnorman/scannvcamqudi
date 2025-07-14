@@ -49,10 +49,10 @@ class AomControlLogic(LogicBase):
     # Config options
     photodiode_channel = ConfigOption('photodiode_channel', missing='error')
     aom_channel = ConfigOption('aom_channel', '')
-    photodiode_factor = ConfigOption('photodiode_factor', 1.0)
-    query_interval = ConfigOption('query_interval', 10)
-    ui_update_interval = ConfigOption('ui_update_interval', 100)
-    volt_range = ConfigOption('aom_volt_range', [0, 5])
+    photodiode_factor = ConfigOption('photodiode_factor', missing = 1.0)
+    query_interval = ConfigOption('query_interval', missing = 10)
+    ui_update_interval = ConfigOption('ui_update_interval',missing = 100)
+    volt_range = ConfigOption('aom_volt_range', missing = [0, 5])
 
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)

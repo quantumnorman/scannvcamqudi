@@ -88,9 +88,9 @@ class TimeSeriesReaderLogic(LogicBase):
     def __repr_data_rate(self, value):
         return self.data_rate
 
-    @_active_channels.representer
-    def __repr_active_channels(self, value):
-        return self.active_channel_names
+    #@_active_channels.representer
+    #def __repr_active_channels(self, value):
+    #    return self.active_channel_names
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -138,23 +138,31 @@ class TimeSeriesReaderLogic(LogicBase):
         # Check valid StatusVar
         # active channels
         avail_channels = list(constraints.channel_units)
+        print("channels", self._active_channels)
         if self._active_channels is None:
             if streamer.active_channels:
                 self._active_channels = streamer.active_channels.copy()
+                print(1)
             else:
                 self._active_channels = avail_channels
             self._averaged_channels = self._active_channels
+            print(2)
         elif any(ch not in avail_channels for ch in self._active_channels):
             self.log.warning('Invalid active channels found in StatusVar. StatusVar ignored.')
             if streamer.active_channels:
                 self._active_channels = streamer.active_channels.copy()
+                print(3)
             else:
                 self._active_channels = avail_channels
+                print(4)
             self._averaged_channels = self._active_channels
+            print(5)
         elif self._averaged_channels is not None:
             self._averaged_channels = [
                 ch for ch in self._averaged_channels if ch in self._active_channels
             ]
+            print('logic on activate', streamer.active_channels, self._active_channels)
+            print(6)
 
         # Check for odd moving averaging window
         if self._moving_average_width % 2 == 0:
@@ -382,6 +390,7 @@ class TimeSeriesReaderLogic(LogicBase):
                     channel_buffer_size=self._channel_buffer_size,
                     sample_rate=settings['data_rate'] * settings['oversampling_factor']
                 )
+                print("set trace settings")
                 # update actually set values
                 self._oversampling_factor = settings['oversampling_factor']
                 self._moving_average_width = settings['moving_average_width']
@@ -424,6 +433,7 @@ class TimeSeriesReaderLogic(LogicBase):
                 channel_buffer_size=self._channel_buffer_size,
                 sample_rate=self.sampling_rate
             )
+            print("set channel settings")
             self._averaged_channels = [ch for ch in averaged if ch in enabled]
             self._init_data_arrays()
         except:
@@ -560,16 +570,15 @@ class TimeSeriesReaderLogic(LogicBase):
                  channel_count]
             )
             data_view = np.mean(data_view, axis=1)
-
         # discard data outside time frame
         data_view = data_view[-self._trace_data.shape[0]:, :]
         new_channel_samples = data_view.shape[0]
 
         # Roll data array to have a continuously running time trace
         self._trace_data = np.roll(self._trace_data, -new_channel_samples, axis=0)
+        
         # Insert new data
         self._trace_data[-new_channel_samples:, :] = data_view
-
         # Calculate moving average by using numpy.convolve with a normalized uniform filter
         if self.moving_average_width > 1 and self.averaged_channel_names:
             # Only convolve the new data and roll the previously calculated moving average
@@ -716,11 +725,9 @@ class TimeSeriesReaderLogic(LogicBase):
                 [self._recorded_sample_count, channel_count]
             )
             if self._recorded_raw_times is not None:
-                print(data.shape)
                 data = np.column_stack(
                     [self._recorded_raw_times[:self._recorded_sample_count], data]
                 )
-                print(data.shape, '\n')
                 column_headers.insert(0, 'Time (s)')
             try:
                 fig = self._draw_raw_data_thumbnail(data) if save_figure else None
@@ -742,7 +749,6 @@ class TimeSeriesReaderLogic(LogicBase):
         # Handle excessive data size for plotting. Artefacts may occur due to IIR decimation filter.
         decimate_factor = 0
         while data.shape[0] >= 20000:
-            print(data.shape[0])
             decimate_factor += 2
             data = decimate(data, q=2, axis=0)
 
