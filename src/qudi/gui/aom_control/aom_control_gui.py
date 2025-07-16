@@ -64,7 +64,7 @@ class AomMainWindow(QtWidgets.QMainWindow):
 class AomControlGui(GuiBase ):
 
     # declare connectors
-    aomlogic = Connector(interface='AomControlLogic')
+    aom_control_logic = Connector(interface="AomControlLogic")
 
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
@@ -95,7 +95,7 @@ class AomControlGui(GuiBase ):
         self._mw.setpoint.editingFinished.connect(self.setpoint_changed)
 
         # Connect logic events
-        self.aom_logic = self.aomlogic()
+        self.aom_logic = self.aom_control_logic()
 
         self.aom_logic.sigAomUpdated.connect(self.update)
 
