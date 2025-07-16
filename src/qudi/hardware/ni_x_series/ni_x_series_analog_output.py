@@ -98,18 +98,18 @@ class NIXSeriesAnalogOutput(ProcessControlSwitchMixin, ProcessSetpointInterface)
 
         # Sanitize channel configuration
         ao_limits = ao_voltage_range(self._device_name)
-        valid_channels = ao_channel_names(self._device_name)
-        valid_channels_lower = [name.lower() for name in valid_channels]
+        self._valid_channels = ao_channel_names(self._device_name)
+        valid_channels_lower = [name.lower() for name in self._valid_channels]
         limits = dict()
         for ch_name in natural_sort(self._channels_config):
             ch_cfg = self._channels_config[ch_name]
             norm_name = normalize_channel_name(ch_name).lower()
             try:
-                device_name = valid_channels[valid_channels_lower.index(norm_name)]
+                device_name = self._valid_channels[valid_channels_lower.index(norm_name)]
             except (ValueError, IndexError):
                 self.log.error(f'Invalid analog output channel "{ch_name}" configured. Channel '
                                f'will be ignored.\nValid analog output channels are: '
-                               f'{valid_channels}')
+                               f'{self._valid_channels}')
                 continue
             try:
                 ch_limits = ch_cfg['limits']
@@ -265,3 +265,8 @@ class NIXSeriesAnalogOutput(ProcessControlSwitchMixin, ProcessSetpointInterface)
         self._setpoints.update(
             {ch: 0 for ch in self.constraints.setpoint_channels if ch not in self._setpoints}
         )
+
+    @property
+    def valid_channels(self) -> list[str]:
+        """ Read-only property returning the currently configured active channel names """
+        return list(self._valid_channels)

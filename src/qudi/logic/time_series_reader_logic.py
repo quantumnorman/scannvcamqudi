@@ -72,9 +72,9 @@ class TimeSeriesReaderLogic(LogicBase):
                                         missing='info',
                                         constructor=lambda x: int(round(x)))
     _max_raw_data_bytes = ConfigOption(name='max_raw_data_bytes',
-                                       default=1024**3,
-                                       missing='info',
-                                       constructor=lambda x: int(round(x)))
+                                        default=1024**3,
+                                        missing='info',
+                                        constructor=lambda x: int(round(x)))
 
     # status vars
     _trace_window_size = StatusVar('trace_window_size', default=6)
@@ -167,8 +167,8 @@ class TimeSeriesReaderLogic(LogicBase):
         # Check for odd moving averaging window
         if self._moving_average_width % 2 == 0:
             self.log.warning('Moving average width ConfigOption must be odd integer number. '
-                             'Changing value from {0:d} to {1:d}.'
-                             ''.format(self._moving_average_width, self._moving_average_width + 1))
+                            'Changing value from {0:d} to {1:d}.'
+                            ''.format(self._moving_average_width, self._moving_average_width + 1))
             self._moving_average_width += 1
 
         # set settings in streamer hardware
@@ -214,7 +214,7 @@ class TimeSeriesReaderLogic(LogicBase):
 
         # raw data buffers
         self._data_buffer = np.zeros(shape=(channel_count, self._channel_buffer_size),
-                                     dtype=constraints.data_type)
+                                    dtype=constraints.data_type)
         if constraints.sample_timing == SampleTiming.TIMESTAMP:
             self._times_buffer = np.zeros(self._channel_buffer_size, dtype=np.float64)
         else:
@@ -331,7 +331,7 @@ class TimeSeriesReaderLogic(LogicBase):
 
     @QtCore.Slot(dict)
     def set_trace_settings(self,
-                           settings_dict: Optional[Mapping[str, Union[int, float]]] = None,
+                            settings_dict: Optional[Mapping[str, Union[int, float]]] = None,
                            **kwargs) -> None:
         """ Method to set new trace settings.
         Can either provide (a subset of) trace_settings via dict as first positional argument
@@ -364,20 +364,20 @@ class TimeSeriesReaderLogic(LogicBase):
 
             if settings['oversampling_factor'] < 1:
                 raise ValueError(f'Oversampling factor must be integer value >= 1 '
-                                 f'(received: {settings["oversampling_factor"]:d})')
+                                f'(received: {settings["oversampling_factor"]:d})')
 
             if settings['moving_average_width'] < 1:
                 raise ValueError(f'Moving average width must be integer value >= 1 '
-                                 f'(received: {settings["moving_average_width"]:d})')
+                                f'(received: {settings["moving_average_width"]:d})')
             if settings['moving_average_width'] % 2 == 0:
                 settings['moving_average_width'] += 1
                 self.log.warning(f'Moving average window must be odd integer number in order to '
-                                 f'ensure perfect data alignment. Increased value to '
-                                 f'{settings["moving_average_width"]:d}.')
+                                f'ensure perfect data alignment. Increased value to '
+                                f'{settings["moving_average_width"]:d}.')
             if settings['moving_average_width'] / settings['data_rate'] > settings['trace_window_size']:
                 self.log.warning(f'Moving average width ({settings["moving_average_width"]:d}) is '
-                                 f'smaller than the trace window size. Will adjust trace window '
-                                 f'size to match.')
+                                f'smaller than the trace window size. Will adjust trace window '
+                                f'size to match.')
                 settings['trace_window_size'] = float(
                     settings['moving_average_width'] / settings['data_rate']
                 )
@@ -396,7 +396,7 @@ class TimeSeriesReaderLogic(LogicBase):
                 self._moving_average_width = settings['moving_average_width']
                 self._trace_window_size = settings['trace_window_size']
                 self.__moving_filter = np.full(shape=self._moving_average_width,
-                                               fill_value=1.0 / self._moving_average_width)
+                                                fill_value=1.0 / self._moving_average_width)
                 self._samples_per_frame = max(1, int(round(self.data_rate / self._max_frame_rate)))
                 self._init_data_arrays()
         except:
@@ -468,7 +468,7 @@ class TimeSeriesReaderLogic(LogicBase):
             finally:
                 self._sigNextDataFrame.emit()
                 self.sigStatusChanged.emit(self.module_state() == 'locked',
-                                           self._data_recording_active)
+                                            self._data_recording_active)
 
     @QtCore.Slot()
     def stop_reading(self) -> None:
@@ -511,8 +511,8 @@ class TimeSeriesReaderLogic(LogicBase):
                     if not self._streamer_is_remote:
                         # we can use the more efficient method of using a shared buffer
                         streamer.read_data_into_buffer(data_buffer=self._data_buffer,
-                                                       samples_per_channel=samples_to_read,
-                                                       timestamp_buffer=self._times_buffer)
+                                                        samples_per_channel=samples_to_read,
+                                                        timestamp_buffer=self._times_buffer)
                     else:
                         # streamer is remote, we need to have a new buffer created and passed to us
                         self._data_buffer, self._times_buffer = streamer.read_data(
@@ -566,8 +566,8 @@ class TimeSeriesReaderLogic(LogicBase):
         if self.oversampling_factor > 1:
             data_view = data_view.reshape(
                 [samples_per_channel // self.oversampling_factor,
-                 self.oversampling_factor,
-                 channel_count]
+                self.oversampling_factor,
+                channel_count]
             )
             data_view = np.mean(data_view, axis=1)
         # discard data outside time frame
@@ -616,7 +616,7 @@ class TimeSeriesReaderLogic(LogicBase):
                 channel_samples = max(1, self._max_raw_data_bytes // (channel_count * sample_bytes))
             self._recorded_raw_times = None
         self._recorded_raw_data = np.empty(channel_count * channel_samples,
-                                           dtype=constraints.data_type)
+                                            dtype=constraints.data_type)
         self._recorded_sample_count = 0
 
     def _expand_recording_arrays(self) -> int:
@@ -734,9 +734,9 @@ class TimeSeriesReaderLogic(LogicBase):
             finally:
                 storage = TextDataStorage(root_dir=self.module_default_data_dir)
                 filepath, _, _ = storage.save_data(data,
-                                                   metadata=metadata,
-                                                   nametag=nametag,
-                                                   column_headers=column_headers)
+                                                    metadata=metadata,
+                                                    nametag=nametag,
+                                                    column_headers=column_headers)
             if fig is not None:
                 storage.save_thumbnail(mpl_figure=fig, file_path=filepath)
         except:
@@ -808,10 +808,10 @@ class TimeSeriesReaderLogic(LogicBase):
 
                 storage = TextDataStorage(root_dir=self.module_default_data_dir)
                 filepath, _, _ = storage.save_data(data,
-                                                   timestamp=timestamp,
-                                                   metadata=metadata,
-                                                   nametag=nametag,
-                                                   column_headers=column_headers)
+                                                    timestamp=timestamp,
+                                                    metadata=metadata,
+                                                    nametag=nametag,
+                                                    column_headers=column_headers)
             if fig is not None:
                 storage.save_thumbnail(mpl_figure=fig, file_path=filepath)
         except:

@@ -225,7 +225,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         # Create constraints
         channel_units = {chnl: 'counts/s' for chnl in self._digital_sources}
         channel_units.update({chnl: 'V' for chnl in self._analog_sources})
-        print("channel units", channel_units)
+        # print("channel units", channel_units)
         self._constraints = DataInStreamConstraints(
             channel_units=channel_units,
             sample_timing=SampleTiming.CONSTANT,
@@ -350,9 +350,9 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         self.__buffer_size = channel_buffer_size
         self.__sample_rate = sample_rate
         digital_count = len([ch for ch in self.__active_channels if ch in self._digital_sources])
-        print("digital channels", digital_count)
+        # print("digital channels", digital_count)
         analog_count = len(self.__active_channels) - digital_count
-        print("active channels", self.__active_channels)
+        # print("active channels", self.__active_channels)
         self.__tmp_buffer = np.empty(
             self.__buffer_size * max(analog_count, int(digital_count > 0)),
             dtype=self._constraints.data_type
@@ -422,18 +422,22 @@ class NIXSeriesInStreamer(DataInStreamInterface):
 
         This function is blocking until the required number of samples has been acquired.
         """
+        # print("passed to streamer")
         if self.module_state() != 'locked':
+            print("error1")
             raise RuntimeError('Unable to read data. Device is not running.')
         # Check for buffer overflow
         if self.available_samples > self.__buffer_size:
+            print("error2")
             raise OverflowError('Hardware channel buffer has overflown. Please increase readout '
                                 'speed or decrease sample rate.')
         if not isinstance(data_buffer, np.ndarray) or data_buffer.dtype != self._constraints.data_type:
+            print("error3")
             raise TypeError(
                 f'data_buffer must be numpy.ndarray with dtype {self._constraints.data_type}'
             )
         channel_count = len(self.__active_channels)
-        print("ch#annel count", channel_count)
+        # print("ch#annel count", channel_count)
 
         digital_count = len(self._di_readers)
         analog_count = channel_count - digital_count
@@ -441,7 +445,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
             samples_per_channel = len(data_buffer) // channel_count
         total_samples = channel_count * samples_per_channel
         if samples_per_channel > 0:
-            print("samples per channel", samples_per_channel)
+            # print("samples per channel", samples_per_channel)
             try:
                 channel_offset = 0
                 # Read digital channels
@@ -458,13 +462,14 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                     channel_offset += 1
                 # Read analog channels
                 if self._ai_reader is not None:
-                    print("channel offset", channel_offset)
+                    # print("channel offset", channel_offset)
                     if channel_offset == 0:
                         read_samples = self._ai_reader.read_many_sample(
                             data_buffer,
                             number_of_samples_per_channel=samples_per_channel,
                             timeout=self._rw_timeout
                         )
+                        # print(data_buffer)
                     else:
                         tmp_view = self.__tmp_buffer[:analog_count * samples_per_channel]
                         read_samples = self._ai_reader.read_many_sample(
@@ -747,7 +752,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
         """ Set up task for analog voltage measurement. """
         all_channels = list(self._constraints.channel_units)
         analog_channels = [ch for ch in all_channels[len(self._digital_sources):] if ch in self.__active_channels]
-        print(analog_channels)
+        # print(analog_channels)
         if analog_channels:
             if self._ai_task_handle:
                 raise RuntimeError('Analog input task has already been generated')
@@ -768,7 +773,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
             task_name = f'AnalogIn_{id(self):d}'
             try:
                 ai_task = ni.Task(task_name)
-                print("task name", task_name)
+                # print("task name", task_name)
             except ni.DaqError as err:
                 raise RuntimeError(
                     f'Unable to create analog-in task with name "{task_name}"'
@@ -776,7 +781,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
 
             try:
                 ai_ch_str = ','.join([f'/{self._device_name}/{ch}' for ch in analog_channels])
-                print("ai channel string", ai_ch_str)
+                # print("ai channel string", ai_ch_str)
                 ai_task.ai_channels.add_ai_voltage_chan(ai_ch_str,
                                                         max_val=max(self._adc_voltage_range),
                                                         min_val=min(self._adc_voltage_range))
@@ -787,7 +792,7 @@ class NIXSeriesInStreamer(DataInStreamInterface):
                     sample_mode=ni.constants.AcquisitionType.CONTINUOUS,
                     samps_per_chan=self.__buffer_size
                 )
-                print(ai_task.ai_channels.channel_names, )
+                # print(ai_task.ai_channels.channel_names, )
             except ni.DaqError as err:
                 try:
                     del ai_task

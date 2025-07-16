@@ -35,8 +35,8 @@ from qudi.core.configoption import ConfigOption
 
 from nidaqmx.errors import DaqError
 
-from .pid_logic import PIDLogic
-
+# from .pid_logic import PIDLogic
+import simple_pid
 
 class AomControlLogic(LogicBase):
     """
@@ -44,15 +44,14 @@ class AomControlLogic(LogicBase):
     """
 
     sigAomUpdated = QtCore.Signal(dict)
-    nicard = Connector(interface='NationalInstrumentsXSeries')
+    photodiode_channel = Connector(name= "photodiode_channel", interface='DataInStreamInterface')
+    ao_nicard = Connector(name = "nicard_aom_ao", interface='ProcessSetpointInterface')
 
     # Config options
-    photodiode_channel = ConfigOption('photodiode_channel', missing='error')
-    aom_channel = ConfigOption('aom_channel', '')
-    photodiode_factor = ConfigOption('photodiode_factor', missing = 1.0)
-    query_interval = ConfigOption('query_interval', missing = 10)
-    ui_update_interval = ConfigOption('ui_update_interval',missing = 100)
-    volt_range = ConfigOption('aom_volt_range', missing = [0, 5])
+    photodiode_factor = ConfigOption('photodiode_factor')
+    query_interval = ConfigOption('query_interval')
+    ui_update_interval = ConfigOption('ui_update_interval')
+    volt_range = ConfigOption('aom_volt_range')
 
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
@@ -61,7 +60,12 @@ class AomControlLogic(LogicBase):
         """ Definition and initialisation of the GUI.
         """
         # Hardware
-        self.daqcard = self.nicard()
+        self.daqcard = self.ao_nicard()
+        self.pdread = self.photodiode_channel()
+        self.aomchannel = self.daqcard.valid_channels[0]
+        self.pdread.start_stream()
+        self.daqcard.set_activity_state(self.aomchannel, True)
+
 
         # Kalman filter variables
         self.x = 0.0                 # A priori estimate of x
@@ -72,7 +76,7 @@ class AomControlLogic(LogicBase):
         self.Q = 5E-4       # Estimate of process variance (volts)
 
         self.pid_enabled = False
-        self.pid = PIDLogic.PID(
+        self.pid = simple_pid.PID(
             Kp=2,
             Ki=5,
             Kd=0,
@@ -119,7 +123,17 @@ class AomControlLogic(LogicBase):
 
         try:
             # Read voltage from photodiode
-            self.voltage_reading = np.mean(self.daqcard.analog_channel_read(self.photodiode_channel))
+            self._databuffer = np.zeros((10))
+            self._samples_to_read = 10
+            self._times_buffer = np.zeros(10, dtype=np.float64)
+            
+            # print("pre read pd databuffer", self._databuffer)
+            # print("pd channel", self.pdread)
+            self.pdread.read_data_into_buffer(data_buffer=self._databuffer,
+                                                    samples_per_channel=self._samples_to_read,
+                                                    timestamp_buffer=self._times_buffer)            
+            # print("post read pd databuffer", self._databuffer)
+            self.voltage_reading = np.mean(self._databuffer)
 
             # Do Kalman filtering
             prev_x = self.x
@@ -169,8 +183,8 @@ class AomControlLogic(LogicBase):
         if volts >= min(self.volt_range) and volts <= max(self.volt_range):
             # Check inside acceptable voltage range
             # Write to analogue output
-            if self.aom_channel != '':
-                self.daqcard.analog_channel_write(self.aom_channel, volts)
+            if self.aomchannel != '':
+                self.daqcard.set_setpoint(self.aomchannel, volts)
                 self.current_volts = volts
                 return 0
             else:
