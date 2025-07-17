@@ -47,7 +47,7 @@ class APDLogic(LogicBase):
     """
 
     sigAPDUpdated = QtCore.Signal(dict)
-    apd_channel = Connector(name= "apd_channel", interface='DataInStreamInterface')
+    _apd_channel = Connector(name= "apd_channel", interface='FiniteSamplingInputInterface')
 
     # Config options
     query_interval = ConfigOption('query_interval')
@@ -60,7 +60,7 @@ class APDLogic(LogicBase):
         """ Definition and initialisation of the GUI.
         """
         # Hardware
-        self.apdread = self.apd_channel()
+        self.apdread = self._apd_channel()
         self.apdread.start_stream()
 
         self.count_reading = 0
