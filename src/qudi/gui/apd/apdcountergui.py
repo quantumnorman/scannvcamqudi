@@ -24,9 +24,9 @@ import numpy as np
 import os
 import pyqtgraph as pg
 
-from core.connector import Connector
-from gui.colordefs import QudiPalettePale as palette
-from gui.guibase import GUIBase
+from qudi.core.connector import Connector
+from qudi.util.colordefs import QudiPalettePale as palette
+from qudi.core.module import GuiBase
 from qtpy import QtCore
 from qtpy import QtWidgets
 from qtpy import uic
@@ -48,12 +48,12 @@ class CounterMainWindow(QtWidgets.QMainWindow):
         self.show()
 
 
-class CounterGui(GUIBase):
+class CounterGui(GuiBase):
     """ FIXME: Please document
     """
 
     # declare connectors
-    counterlogic1 = Connector(interface='CounterLogic')
+    apd_logic = Connector(interface='CountingLogic')
 
     sigStartCounter = QtCore.Signal()
     sigStopCounter = QtCore.Signal()
@@ -65,7 +65,7 @@ class CounterGui(GUIBase):
         """ Definition and initialisation of the GUI.
         """
 
-        self._counting_logic = self.counterlogic1()
+        self._counting_logic = self.apd_logic()
 
         #####################
         # Configuring the dock widgets
@@ -84,24 +84,8 @@ class CounterGui(GUIBase):
         self._pw.setLabel('left', 'Fluorescence', units='counts/s')
         self._pw.setLabel('bottom', 'Time', units='s')
 
-        self.curves = []
-
-        for i, ch in enumerate(self._counting_logic.get_channels()):
-            if i % 2 == 0:
-                # Create an empty plot curve to be filled later, set its pen
-                self.curves.append(
-                    pg.PlotDataItem(pen=pg.mkPen(palette.c1), symbol=None))
-                self._pw.addItem(self.curves[-1])
-                self.curves.append(
-                    pg.PlotDataItem(pen=pg.mkPen(palette.c2, width=3), symbol=None))
-                self._pw.addItem(self.curves[-1])
-            else:
-                self.curves.append(
-                    pg.PlotDataItem(pen=pg.mkPen(palette.c3), symbol=None))
-                self._pw.addItem(self.curves[-1])
-                self.curves.append(
-                    pg.PlotDataItem(pen=pg.mkPen(palette.c4, width=3), symbol=None))
-                self._pw.addItem(self.curves[-1])
+        self.curves = [pg.PlotDataItem(pen = pg.mkPen(palette.c1), symbol=None)]
+        self._pw.addItem(self.curves[-1])
 
         # setting the x axis length correctly
         self._pw.setXRange(
@@ -125,41 +109,6 @@ class CounterGui(GUIBase):
         self._mw.count_length_SpinBox.valueChanged.connect(self.count_length_changed)
         self._mw.count_freq_SpinBox.valueChanged.connect(self.count_frequency_changed)
         self._mw.oversampling_SpinBox.valueChanged.connect(self.oversampling_changed)
-
-        if len(self.curves) >= 2:
-            self._mw.trace_1_checkbox.setChecked(True)
-        else:
-            self._mw.trace_1_checkbox.setEnabled(False)
-            self._mw.trace_1_radiobutton.setEnabled(False)
-
-        if len(self.curves) >= 4:
-            self._mw.trace_2_checkbox.setChecked(True)
-        else:
-            self._mw.trace_2_checkbox.setEnabled(False)
-            self._mw.trace_2_radiobutton.setEnabled(False)
-
-        if len(self.curves) >= 6:
-            self._mw.trace_3_checkbox.setChecked(True)
-        else:
-            self._mw.trace_3_checkbox.setEnabled(False)
-            self._mw.trace_3_radiobutton.setEnabled(False)
-
-        if len(self.curves) >= 8:
-            self._mw.trace_4_checkbox.setChecked(True)
-        else:
-            self._mw.trace_4_checkbox.setEnabled(False)
-            self._mw.trace_4_radiobutton.setEnabled(False)
-
-        self._mw.trace_1_checkbox.stateChanged.connect(self.trace_selection_changed)
-        self._mw.trace_2_checkbox.stateChanged.connect(self.trace_selection_changed)
-        self._mw.trace_3_checkbox.stateChanged.connect(self.trace_selection_changed)
-        self._mw.trace_4_checkbox.stateChanged.connect(self.trace_selection_changed)
-
-        self._mw.trace_1_radiobutton.setChecked(True)
-        self._mw.trace_1_radiobutton.released.connect(self.trace_display_changed)
-        self._mw.trace_2_radiobutton.released.connect(self.trace_display_changed)
-        self._mw.trace_3_radiobutton.released.connect(self.trace_display_changed)
-        self._mw.trace_4_radiobutton.released.connect(self.trace_display_changed)
 
         # Connect the default view action
         self._mw.restore_default_view_Action.triggered.connect(self.restore_default_view)
@@ -185,7 +134,6 @@ class CounterGui(GUIBase):
         self._counting_logic.sigCountLengthChanged.connect(self.update_count_length_SpinBox)
         self._counting_logic.sigCountFrequencyChanged.connect(self.update_count_freq_SpinBox)
         self._counting_logic.sigSavingStatusChanged.connect(self.update_saving_Action)
-        self._counting_logic.sigCountingModeChanged.connect(self.update_counting_mode_ComboBox)
         self._counting_logic.sigCountStatusChanged.connect(self.update_count_status_Action)
 
         return 0
@@ -208,10 +156,6 @@ class CounterGui(GUIBase):
         self._mw.count_length_SpinBox.valueChanged.disconnect()
         self._mw.count_freq_SpinBox.valueChanged.disconnect()
         self._mw.oversampling_SpinBox.valueChanged.disconnect()
-        self._mw.trace_1_checkbox.stateChanged.disconnect()
-        self._mw.trace_2_checkbox.stateChanged.disconnect()
-        self._mw.trace_3_checkbox.stateChanged.disconnect()
-        self._mw.trace_4_checkbox.stateChanged.disconnect()
         self._mw.restore_default_view_Action.triggered.disconnect()
         self.sigStartCounter.disconnect()
         self.sigStopCounter.disconnect()
@@ -220,7 +164,6 @@ class CounterGui(GUIBase):
         self._counting_logic.sigCountLengthChanged.disconnect()
         self._counting_logic.sigCountFrequencyChanged.disconnect()
         self._counting_logic.sigSavingStatusChanged.disconnect()
-        self._counting_logic.sigCountingModeChanged.disconnect()
         self._counting_logic.sigCountStatusChanged.disconnect()
 
         self._mw.close()

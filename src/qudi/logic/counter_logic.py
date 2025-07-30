@@ -32,7 +32,7 @@ from qudi.interface.slow_counter_interface import CountingMode
 from qudi.util.mutex import Mutex
 
 
-class CounterLogic(Logic):
+class CounterLogic1(LogicBase):
     """ This logic module gathers data from a hardware counting device.
 
     @signal sigCounterUpdate: there is new counting data available

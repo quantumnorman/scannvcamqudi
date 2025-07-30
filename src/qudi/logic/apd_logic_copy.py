@@ -32,7 +32,7 @@ from qudi.core.module import LogicBase
 from qtpy import QtCore
 from qudi.util.network import netobtain
 
-from qudi.interface.finite_sampling_input_interface import FiniteSamplingInputConstraints
+# from qudi.interface.finite_sampling_input_interface import FiniteSamplingInputConstraints
 from qudi.core.configoption import ConfigOption
 
 from nidaqmx.errors import DaqError
@@ -50,21 +50,19 @@ class CountingLogic(LogicBase):
 
     sigCountDataNext = QtCore.Signal()
 
-    sigGatedCounterFinished = QtCore.Signal()
-    sigGatedCounterContinue = QtCore.Signal(bool)
     sigCountingSamplesChanged = QtCore.Signal(int)
     sigCountLengthChanged = QtCore.Signal(int)
     sigCountFrequencyChanged = QtCore.Signal(float)
     sigSavingStatusChanged = QtCore.Signal(bool)
     sigCountStatusChanged = QtCore.Signal(bool)
     
-    counter1 = Connector(name= "apd_channel", interface='FiniteSamplingInputInterface')
+    counter1 = Connector(name= "apd_channel", interface='APDCounterInterface')
 
     # Config options
-    _count_length = StatusVar("count_length", default=300)
-    _smooth_window_length = StatusVar("smooth_window_length", default=10)
-    _counting_samples = StatusVar('counting_samples', 10)
-    _count_frequency = StatusVar('count_frequency', 50)
+    _count_length = ConfigOption("count_length", default=300)
+    _smooth_window_length = ConfigOption("smooth_window_length", default=10)
+    _counting_samples = ConfigOption('counting_samples', 10)
+    _count_frequency = ConfigOption('count_frequency', 50)
     def __init__(self, config, **kwargs):
         super().__init__(config=config, **kwargs)
         self.threadlock = Mutex()
@@ -99,16 +97,6 @@ class CountingLogic(LogicBase):
         self.sigCountDataNext.disconnect()
         return
 
-
-    def get_hardware_constraints(self):
-        """
-        Retrieve the hardware constrains from the counter device.
-
-        @return SlowCounterConstraints: object with constraints for the counter
-        """
-
-
-        return self._counting_device._constraints
     
     def get_channels(self):
         """ Shortcut for hardware get_counter_channels.
@@ -116,7 +104,7 @@ class CountingLogic(LogicBase):
             @return list(str): return list of active counter channel names
         """
         channels = []
-        for channel in self._counting_device._channel_units:
+        for channel in self._counting_device.active_channels:
             channels.append(channel)
         return channels
 
@@ -182,21 +170,21 @@ class CountingLogic(LogicBase):
 
         This makes sure, the counter is stopped first and restarted afterwards.
         """
-        constraints = self.get_hardware_constraints()
+        # constraints = self.get_hardware_constraints()
 
         if self.module_state() == 'locked':
             restart = True
         else:
             restart = False
 
-        if constraints.min_sample_rate <= frequency <= constraints.max_sample_rate:
-            self._stopCount_wait()
-            self._count_frequency = frequency
-            # if the counter was running, restart it
-            if restart:
-                self.startCount()
-        else:
-            self.log.warning('count_frequency not in range! Command ignored!')
+        # if constraints.min_sample_rate <= frequency <= constraints.max_sample_rate:
+            # self._stopCount_wait()
+        self._count_frequency = frequency
+        #     # if the counter was running, restart it
+        #     if restart:
+        #         self.startCount()
+        # else:
+        #     self.log.warning('count_frequency not in range! Command ignored!')
         self.sigCountFrequencyChanged.emit(self._count_frequency)
         return self._count_frequency
 
@@ -255,7 +243,7 @@ class CountingLogic(LogicBase):
             @return error: 0 is OK, -1 is error
         """
         # Sanity checks
-        constraints = self.get_hardware_constraints()
+        # constraints = self.get_hardware_constraints()
         with self.threadlock:
             # Lock module
             if self.module_state() != 'locked':
@@ -266,7 +254,7 @@ class CountingLogic(LogicBase):
             # Set up clock
             
             # Set up counter
-            counter_status = self._counting_device.set_active_channels(self.get_channels())
+            # counter_status = self._counting_device.set_active_channels(self.get_channels())
 
             # initialising the data arrays
             self.rawdata = np.zeros([len(self.get_channels()), self._counting_samples])
@@ -309,7 +297,7 @@ class CountingLogic(LogicBase):
                     self.sigCounterUpdated.emit()
                     return
                 # read the current counter value
-                self.rawdata = self._counting_device.acquire_frame(self._counting_samples)
+                self.rawdata = self._counting_device.acquire_counts(self._counting_samples)
             # call this again from event loop
             self.sigCounterUpdated.emit()
             self.sigCountDataNext.emit()

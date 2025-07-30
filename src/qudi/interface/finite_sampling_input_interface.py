@@ -166,6 +166,7 @@ class FiniteSamplingInputConstraints:
     """ A container to hold all constraints for finite input sampling devices.
     """
     def __init__(self, channel_units, frame_size_limits, sample_rate_limits):
+        print("passed to interface")
         assert len(sample_rate_limits) == 2, 'Sample rate limits must be iterable of length 2'
         assert len(frame_size_limits) == 2, 'Frame size limits must be iterable of length 2'
         assert all(lim > 0 for lim in sample_rate_limits), 'Sample rate limits must be > 0'
