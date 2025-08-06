@@ -30,8 +30,12 @@ from qudi.core.module import GuiBase
 from qtpy import QtCore
 from qtpy import QtWidgets
 from qtpy import uic
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
 
 
+import sys
 
 class CounterMainWindow(QtWidgets.QMainWindow):
 
@@ -428,3 +432,10 @@ class CounterGui(GuiBase):
     def update_smoothing_ComboBox(self):
         self.log.warning('Not implemented yet')
         return 0
+    
+# app = QApplication(sys.argv)
+
+# window = CounterMainWindow()
+# window.show()
+
+# app.exec_()
