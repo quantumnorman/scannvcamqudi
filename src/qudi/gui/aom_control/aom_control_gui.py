@@ -152,7 +152,7 @@ class AomControlGui(GuiBase ):
             raise
 
     def output_slider_moved(self, val):
-        volts = val / 10
+        volts = val / 100
         self.aom_logic.enable_pid(False)
         self._mw.pid_enable.setChecked(False)
         self.aom_logic.set_aom_volts(volts)
