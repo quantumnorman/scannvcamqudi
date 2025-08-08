@@ -34,7 +34,7 @@ class PiezoStepperMainWindow(QMainWindow):
         self.xgridLayout.addWidget(self.xground_pushButton, 1, 5, 1, 1)
 
         self.xenable_pushButton = QPushButton(self.xgridLayoutWidget, text="Enable x piezo")
-        self.xgridLayout.addWidget(self.xground_pushButton, 1, 4, 1, 1)
+        self.xgridLayout.addWidget(self.xenable_pushButton, 1, 4, 1, 1)
 
         self.xneg_step_pushButton = QPushButton(self.xgridLayoutWidget, text= "< Step")
         self.xgridLayout.addWidget(self.xneg_step_pushButton, 0, 1, 1, 1)

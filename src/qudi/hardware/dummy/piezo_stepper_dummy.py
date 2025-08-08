@@ -41,6 +41,9 @@ class PiezoStepperDummy(PiezoStepperInterface):
     def set_param(self, channel, param, value):
         print("set param")
 
+    def get_param(self, channel, param):
+        print(channel, param, 'get')
+
     def step(self, channel, sign="+"):
         if self.is_enabled(channel)==True:
             if sign=="+":

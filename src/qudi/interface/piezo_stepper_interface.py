@@ -16,9 +16,9 @@ class PiezoStepperInterface(Base):
     # def __init__(self, config):
     #     pass
 
-    # @abstractmethod
-    # def get_param(self, channel, param):
-    #     pass
+    @abstractmethod
+    def get_param(self, channel, param):
+        pass
 
     @abstractmethod
     def set_param(self, channel, param, value):

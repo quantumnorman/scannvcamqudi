@@ -32,14 +32,18 @@ class PiezoStepperLogic(LogicBase):
 
     def get_modes(self):
         modes = {
-                    '1' : self.device.is_enabled("1"),
-                    '2' : self.device.is_enabled("2"),
-                    '3' : self.device.is_enabled("3")
+                    '1' : self.device.is_enabled(1),
+                    '2' : self.device.is_enabled(2),
+                    '3' : self.device.is_enabled(3)
         }
         return modes
     
     def update_params(self, vals):
         self.device.setallparams(vals)
+
+    def get_param(self, channel, param):
+        return self.device.get_param(channel, param)
+        
 
     def step_clicked(self, axis, sign="+"):
         if self.is_enabled(axis)==True:
@@ -47,8 +51,7 @@ class PiezoStepperLogic(LogicBase):
                 value = 1
             if sign == "-":
                 value = -1
-            # self.device.step(axis, value)
-            print('step', axis, sign)
+            self.device.step(axis, value)
 
     def continuous_pressed(self, axis, direction):
         self.device.jog(axis, direction)
@@ -62,9 +65,10 @@ class PiezoStepperLogic(LogicBase):
 
     def enable_axis(self, axis="all"):
         self.device.enable_axis(axis)
+        return self.device.is_enabled(axis)
         # self.update_modes()
 
     def is_enabled(self, axis="all"):
         mode = self.device.is_enabled(axis)
-        print(axis, "enabled?")
+        print(axis, mode)
         return mode

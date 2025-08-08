@@ -1,24 +1,51 @@
+import sys
+sys.path.append(r"C:\Users\QOMS-User\Code")
+
 from pylablib.devices import Attocube
 import time
+from qudi.interface.piezo_stepper_interface import PiezoStepperInterface
+from qudi.core import ConfigOption
+from qudi.util.mutex import RecursiveMutex
 
 
-class ANC300():
+class ANC300(PiezoStepperInterface):
     ''' Class for ANC300 Piezo Controller to talk to device over rypc server. 
         Possible to add functionality from available functions at: 
         https://pylablib.readthedocs.io/en/latest/.apidoc/pylablib.devices.Attocube.html#pylablib.devices.Attocube.anc300.ANC300.get_axis_serial
-        if functions are added to this class.
+        if functisons are added to this class.
     '''
-    def __init__(self, config):
-        self.name = config['name']
-        self.address = config['address']
-        # Connect
+
+    _config_info = ConfigOption('inst_info', default={'name' : 'ANC300', 'address' : "COM3"})
+    _default_params = ConfigOption("default_params", default = {
+                    '1' : {
+                        'voltage': 25, #piezo amplitude in Volts
+                        'frequency' : 100 #piezo frequency in Hz
+                        },
+                    '2' : {
+                        'voltage' : 25,
+                        'frequency' : 100
+                    },
+                    '3' : {
+                        'voltage' : 25,
+                        'frequency' : 100
+                    }
+                  })
+    def on_activate(self):
+        self.name = self._config_info['name']
+        self.address = self._config_info['address']
         try:
             self.device = Attocube.ANC300(self.address)  # USB or RS232 connection
             print('Successfully connected to the ANC300 on address {}'.format(self.address))
         except Exception as e:
             print('Failed to connect to the ANC300 on address {} because:\n'.format(self.address))
             print(e)
+        self.disable_axis("all")
+        self.values=self._default_params
+        self.setallparams(self.values)
 
+    def on_deactivate(self):
+        self.close()
+        return
     # Getters and setters
   
     def get_param(self, channel, param):
@@ -33,6 +60,10 @@ class ANC300():
             freq = self.device.get_frequency(channel)
             return freq
         
+    def setallparams(self, vals):
+        for i in self.values:
+            self.set_param(int(i), 'voltage', vals[i]['voltage'])
+            self.set_param(int(i), 'frequency', vals[i]['frequency'])
 
     def set_param(self, channel, param, value):
         if param == 'voltage':
@@ -50,7 +81,23 @@ class ANC300():
                 print('Frequency outside of limits', value)
                 return
 
+    def step(self, channel, value=1, sign="+"):
+        if self.is_enabled(channel)==True:
+            if sign=="+":
+                value = value
+            if sign == "-":
+                value = -1*value
+            self.device.move_by(channel, value)
+            print('step', channel, sign)
+        else: print("channel grounded, cannot move")
 
+    def jog(self, channel, direction="+"):
+        if self.is_enabled(channel)==True:
+            self.device.jog(channel, direction)
+        else: print("channel grounded, cannot move")
+
+    def stop(self, axis = "all"):
+        self.device.stop()
 
     def enable_axis(self, channel): 
         self.device.enable_axis(channel)
@@ -59,21 +106,11 @@ class ANC300():
     def disable_axis(self, channel):
         self.device.disable_axis(channel)
         return
-
-    def axis_status(self, channel):
-        return self.device.is_enabled(channel)
-    
-    def step(self, channel, value):
-        self.device.move_by(channel, steps= value)
-        return
-
-    def jog(self, channel, direction):
-        self.device.jog(channel, direction)
-        return
-    
-    def stop(self,axis="all"):
-        self.device.stop()
-        return
     
     def is_enabled(self, axis):
-        self.device.is_enabled(axis)
+        return self.device.is_enabled(axis)
+
+    def close(self):
+        self.stop()
+        self.disable_axis("all")
+        self.device.close()
