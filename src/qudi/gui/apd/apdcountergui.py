@@ -78,7 +78,7 @@ class CounterGui(GuiBase):
 
         # Setup dock widgets
         self._mw.centralwidget.hide()
-        self._mw.trace_selection_DockWidget.hide()
+        #self._mw.trace_selection_DockWidget.hide()
         self._mw.setDockNestingEnabled(True)
 
 
@@ -192,10 +192,11 @@ class CounterGui(GuiBase):
             ymax = -1
             ymin = 2000000000
             for i, ch in enumerate(self._counting_logic.get_channels()):
+    
                 self.curves[2 * i].setData(y=self._counting_logic.countdata[i], x=x_vals)
-                self.curves[2 * i + 1].setData(y=self._counting_logic.countdata_smoothed[i],
-                                               x=x_vals
-                                               )
+                #self.curves[2 * i + 1].setData(y=self._counting_logic.countdata_smoothed[i],
+                #                               x=x_vals
+                #                               )
                 if ymax < self._counting_logic.countdata[i].max() and self._trace_selection[i]:
                     ymax = self._counting_logic.countdata[i].max()
                 if ymin > self._counting_logic.countdata[i].min() and self._trace_selection[i]:
@@ -274,10 +275,10 @@ class CounterGui(GuiBase):
         for i, ch in enumerate(self._counting_logic.get_channels()):
             if self._trace_selection[i]:
                 self._pw.addItem(self.curves[2*i])
-                self._pw.addItem(self.curves[2*i + 1])
+                #self._pw.addItem(self.curves[2*i + 1])
             else:
                 self._pw.removeItem(self.curves[2*i])
-                self._pw.removeItem(self.curves[2*i + 1])
+                #self._pw.removeItem(self.curves[2*i + 1])
 
     def trace_display_changed(self):
         """ Handling of a change in teh selection of which counts should be shown.

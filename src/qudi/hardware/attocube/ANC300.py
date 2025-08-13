@@ -6,6 +6,7 @@ import time
 from qudi.interface.piezo_stepper_interface import PiezoStepperInterface
 from qudi.core import ConfigOption
 from qudi.util.mutex import RecursiveMutex
+##TODO: pull constraints from config instead of hardcode 0-80 volts and 0-100Hz
 
 
 class ANC300(PiezoStepperInterface):

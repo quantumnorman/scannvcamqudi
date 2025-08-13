@@ -8,7 +8,6 @@ import qudi.gui.piezo_stepper.piezostepper_mainwindow as piezo_window
 from PySide2.QtWidgets import QMainWindow
 
 
-
 class PiezoStepperGui(GuiBase):
     # """ The GUI class for piezostepper control.
 

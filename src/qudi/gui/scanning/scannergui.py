@@ -1072,6 +1072,8 @@ class ScannerGui(GuiBase):
 
                 channel_constr = self._scanning_logic().scanner_channels
                 channel = optimize_logic.data_channel
+                print(channel_constr, channel)
+
                 self.optimizer_dockwidget.set_plot_label(
                     axs=seq_step, axis='left', text=channel, units=channel_constr[channel].unit
                 )

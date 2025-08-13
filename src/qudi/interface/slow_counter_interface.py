@@ -20,15 +20,16 @@ Copyright (c) the Qudi Developers. See the COPYRIGHT.txt file at the
 top-level directory of this distribution and at <https://github.com/Ulm-IQO/qudi/>
 """
 
-from core.interface import abstract_interface_method
 from enum import Enum
-from core.meta import InterfaceMetaclass
+
+from abc import abstractmethod
+from qudi.core.module import Base
 
 
-class SlowCounterInterface(metaclass=InterfaceMetaclass):
+class SlowCounterInterface(Base):
     """ Define the controls for a slow counter."""
 
-    @abstract_interface_method
+    @abstractmethod
     def get_constraints(self):
         """ Retrieve the hardware constrains from the counter device.
 
@@ -36,7 +37,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def set_up_clock(self, clock_frequency=None, clock_channel=None):
         """ Configures the hardware clock of the NiDAQ card to give the timing.
 
@@ -46,7 +47,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def set_up_counter(self,
                        counter_channels=None,
                        sources=None,
@@ -71,7 +72,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def get_counter(self, samples=None):
         """ Returns the current counts per second of the counter.
 
@@ -81,7 +82,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def get_counter_channels(self):
         """ Returns the list of counter channel names.
 
@@ -91,7 +92,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
  
-    @abstract_interface_method
+    @abstractmethod
     def close_counter(self):
         """ Closes the counter and cleans up afterwards.
 
@@ -99,7 +100,7 @@ class SlowCounterInterface(metaclass=InterfaceMetaclass):
         """
         pass
 
-    @abstract_interface_method
+    @abstractmethod
     def close_clock(self):
         """ Closes the clock and cleans up afterwards.
 

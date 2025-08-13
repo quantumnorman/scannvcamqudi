@@ -31,37 +31,68 @@ class APDCounterInterface(Base):
 
 
     @abstractmethod
-    def init_counter_task(device_name, 
-                          counter_channel, 
-                          apd_channel, 
-                          edge_type, 
-                          count_offset, 
-                          count_dir):
-        """ Configures the actual counter with a given APD trigger channel.
-        
-        @param str device_name: name of device connected to APD
-        @param str counter_channel: counter channel used for counting (defaults to 'ctr0')
-        @param str apd_channel: specifies the channel the APD is connected to, triggers the count channel to increase
-        @param boolean edge_type: optional, defaults as TRUE for RISING edge trigger
-        @param int count_offset: optional, defaults as 0 for no starting count offset
-        @param boolean count_dir: optional, defaults as TRUE for increasing counts
-        @return int: error code (0:OK, -1:error)
+    def get_constraints(self):
+        """ Retrieve the hardware constrains from the counter device.
 
+        @return SlowCounterConstraints: object with constraints for the counter
         """
         pass
 
     @abstractmethod
-    def acquire_counts(self, samples, timing):
-        """ Returns the current counts per second of the counter.
-        @param NIDAQmx task: counter task to run
-        @param int samples: if defined, number of samples to read in one go
-        @param float timing: how long to count for before returning data
+    def set_up_clock(self, clock_frequency=None, clock_channel=None):
+        """ Configures the hardware clock of the NiDAQ card to give the timing.
 
-        @return int: counts registered for length of timing param
+        @param float clock_frequency: if defined, this sets the frequency of the clock
+        @param string clock_channel: if defined, this is the physical channel of the clock
+        @return int: error code (0:OK, -1:error)
         """
         pass
 
+    @abstractmethod
+    def set_up_counter(self,
+                       counter_channels=None,
+                       sources=None,
+                       clock_channel=None,
+                       counter_buffer=None):
+        """ Configures the actual counter with a given clock.
 
+        @param list(str) counter_channels: optional, physical channel of the counter
+        @param list(str) sources: optional, physical channel where the photons
+                                   photons are to count from
+        @param str clock_channel: optional, specifies the clock channel for the
+                                  counter
+        @param int counter_buffer: optional, a buffer of specified integer
+                                   length, where in each bin the count numbers
+                                   are saved.
+
+        @return int: error code (0:OK, -1:error)
+
+        There need to be exactly the same number sof sources and counter channels and
+        they need to be given in the same order.
+        All counter channels share the same clock.
+        """
+        pass
+
+    @abstractmethod
+    def get_counter(self, samples=None):
+        """ Returns the current counts per second of the counter.
+
+        @param int samples: if defined, number of samples to read in one go
+
+        @return numpy.array((n, uint32)): the photon counts per second for n channels
+        """
+        pass
+
+    # @abstractmethod
+    # def get_counter_channels(self):
+    #     """ Returns the list of counter channel names.
+
+    #     @return list(str): channel names
+
+    #     Most methods calling this might just care about the number of channels, though.
+    #     """
+    #     pass
+ 
     @abstractmethod
     def close_counter(self):
         """ Closes the counter and cleans up afterwards.
@@ -70,9 +101,12 @@ class APDCounterInterface(Base):
         """
         pass
 
-    @property
     @abstractmethod
-    def active_channels(self):
+    def close_clock(self):
+        """ Closes the clock and cleans up afterwards.
+
+        @return int: error code (0:OK, -1:error)
+        """
         pass
 
 class APDCounterConstraints:
@@ -86,3 +120,5 @@ class APDCounterConstraints:
         # add CountingMode enums to this list in instances
         self.counting_mode = []
 
+        self.sample_rate_limits = (1, 1e6)
+        self.frame_size_limits = (1, 1e9)

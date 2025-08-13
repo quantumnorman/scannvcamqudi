@@ -58,7 +58,7 @@ class CountingLogic(LogicBase):
     sigSavingStatusChanged = QtCore.Signal(bool)
     sigCountStatusChanged = QtCore.Signal(bool)
     
-    counter1 = Connector(name= "apd_channel", interface='FiniteSamplingInputInterface')
+    counter1 = Connector(name= "apd_channel", interface='APDCounterInterface')
 
     # Config options
     _count_length = StatusVar("count_length", default=300)
@@ -119,7 +119,7 @@ class CountingLogic(LogicBase):
         for channel in self._counting_device._channel_units:
             channels.append(channel)
         return channels
-
+        return
 
 
     def set_counting_samples(self, samples=1):

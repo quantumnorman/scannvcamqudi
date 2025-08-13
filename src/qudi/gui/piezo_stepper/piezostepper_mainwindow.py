@@ -4,6 +4,8 @@ from PySide2.QtWidgets import *
 from PySide2 import QtCore
 import sys
 
+##TODO: fix groupbox spacing to stop labels from squishing
+
 
 class PiezoStepperMainWindow(QMainWindow):
     
